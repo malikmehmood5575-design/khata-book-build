@@ -1,0 +1,82 @@
+name: Build Khata Book APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter (latest stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Analyze
+        run: |
+          set -o pipefail
+          flutter analyze 2>&1 | tee ANALYZE.log
+
+      - name: Build release APK
+        run: |
+          set -o pipefail
+          flutter build apk --release 2>&1 | tee BUILD_FULL.log
+
+      - name: Prepare result
+        if: success()
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk Khata_Book.apk
+          echo "Khata Book APK build OK" > BUILD_RESULT.txt
+          sha256sum Khata_Book.apk >> BUILD_RESULT.txt
+          ls -la Khata_Book.apk >> BUILD_RESULT.txt
+
+      - name: Upload artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Khata_Book_apk
+          path: Khata_Book.apk
+
+      - name: Publish release (tag khata-book-apk)
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view khata-book-apk >/dev/null 2>&1 || gh release create khata-book-apk --title "Khata Book APK" --notes "Khata Book — release APK"
+          gh release upload khata-book-apk Khata_Book.apk BUILD_RESULT.txt --clobber
+
+      - name: Commit error tail on failure
+        if: failure()
+        run: |
+          {
+            echo "=== ANALYZE (tail) ==="
+            tail -n 60 ANALYZE.log 2>/dev/null
+            echo
+            echo "=== BUILD: What went wrong ==="
+            grep -A 30 "What went wrong" BUILD_FULL.log 2>/dev/null | head -60
+            echo
+            echo "=== BUILD (tail) ==="
+            tail -n 60 BUILD_FULL.log 2>/dev/null
+          } > BUILD_ERROR_TAIL.txt || true
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add BUILD_ERROR_TAIL.txt || true
+          git commit -m "Build error tail [skip ci]" || true
+          git push || true
