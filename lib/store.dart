@@ -176,6 +176,12 @@ class AppStore extends ChangeNotifier {
       if (upto != null && e.date.isAfter(upto)) continue;
       b += e.isIn ? e.amount : -e.amount;
     }
+    // Kharcha bhi cash se hi jata hai — is liye cash balance se minus hoga,
+    // warna Home ka "Cash" aur "Aaj Gaya (Out + Kharcha)" apas me nahi milte.
+    for (final e in expenses) {
+      if (upto != null && e.date.isAfter(upto)) continue;
+      b -= e.amount;
+    }
     return b;
   }
 
