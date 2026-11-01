@@ -254,7 +254,7 @@ class AppStore extends ChangeNotifier {
   /// advance CashBook me IN ho jata hai.
   Future<Bill> createBill({
     required Party party,
-    required List<MeasureLine> measureLines,
+    required List<AmountLine> amountLines,
     required List<MaterialLine> materialLines,
     required double extraCharges,
     required String extraNote,
@@ -268,7 +268,7 @@ class AppStore extends ChangeNotifier {
       number: billCounter,
       partyId: party.id,
       partyName: party.name,
-      measureLines: measureLines,
+      amountLines: amountLines,
       materialLines: materialLines,
       extraCharges: extraCharges,
       extraNote: extraNote,

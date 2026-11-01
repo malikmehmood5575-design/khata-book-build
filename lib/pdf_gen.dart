@@ -118,12 +118,9 @@ Future<void> sharePartyKhataPdf(AppStore store, Party party) async {
 Future<void> shareBillPdf(AppStore store, Bill bill) async {
   final doc = pw.Document();
 
-  final measureRows = bill.measureLines
+  final kaamRows = bill.amountLines
       .map((l) => [
             l.label,
-            '${qtyFmt(l.lengthFt)} x ${qtyFmt(l.widthFt)}',
-            qtyFmt(l.sqft),
-            rs(l.ratePerSqft),
             rs(l.amount),
           ])
       .toList();
@@ -156,13 +153,13 @@ Future<void> shareBillPdf(AppStore store, Bill bill) async {
           pw.Text('Customer: ${bill.partyName}', style: pw.TextStyle(fontSize: 12)),
           if (bill.note.isNotEmpty) pw.Text('Note: ${bill.note}'),
           pw.SizedBox(height: 12),
-          if (measureRows.isNotEmpty) ...[
-            pw.Text('Measurement (Ceiling)',
+          if (kaamRows.isNotEmpty) ...[
+            pw.Text('Kaam',
                 style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 4),
             pw.TableHelper.fromTextArray(
-              headers: ['Item', 'Size (ft)', 'Sq Ft', 'Rate/SqFt', 'Amount'],
-              data: measureRows,
+              headers: ['Kaam', 'Amount'],
+              data: kaamRows,
               headerStyle: pw.TextStyle(
                   color: PdfColors.white, fontWeight: pw.FontWeight.bold),
               headerDecoration: pw.BoxDecoration(color: _navy),
@@ -171,7 +168,7 @@ Future<void> shareBillPdf(AppStore store, Bill bill) async {
             pw.SizedBox(height: 6),
             pw.Align(
               alignment: pw.Alignment.centerRight,
-              child: pw.Text('Measurement Total: ${rs(bill.measureTotal)}',
+              child: pw.Text('Kaam Total: ${rs(bill.amountTotal)}',
                   style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
             ),
             pw.SizedBox(height: 10),
@@ -262,9 +259,8 @@ String billWhatsAppText(AppStore store, Bill bill) {
   b.writeln('Bill No: ${bill.number}  (${fmtDate(bill.date)})');
   b.writeln('Customer: ${bill.partyName}');
   b.writeln('--------------------------');
-  for (final l in bill.measureLines) {
-    b.writeln(
-        '${l.label}: ${qtyFmt(l.lengthFt)} x ${qtyFmt(l.widthFt)} ft = ${qtyFmt(l.sqft)} sq ft @ ${rs(l.ratePerSqft)} = ${rs(l.amount)}');
+  for (final l in bill.amountLines) {
+    b.writeln('${l.label}: ${rs(l.amount)}');
   }
   for (final l in bill.materialLines) {
     b.writeln(

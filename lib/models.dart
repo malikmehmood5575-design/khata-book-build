@@ -14,10 +14,11 @@ String newId() {
 /// udhaarLiya  = supplier se udhaar liya (balance negative, dena hai)
 /// paymentMili = customer se payment mili (balance kam)
 /// paymentDi   = supplier ko payment di (balance negative se kam)
+/// kharcha     = is client/site par kharcha hua (balance kam, lena kam)
 class LedgerEntry {
   final String id;
   final String partyId;
-  final String type; // udhaarDiya | udhaarLiya | paymentMili | paymentDi
+  final String type; // udhaarDiya | udhaarLiya | paymentMili | paymentDi | kharcha
   final double amount;
   final String note;
   final DateTime date;
@@ -44,6 +45,8 @@ class LedgerEntry {
         return -amount;
       case 'paymentDi':
         return amount;
+      case 'kharcha':
+        return -amount;
       default:
         return 0;
     }
@@ -59,6 +62,8 @@ class LedgerEntry {
         return 'Payment Mili';
       case 'paymentDi':
         return 'Payment Di';
+      case 'kharcha':
+        return 'Kharcha';
       default:
         return type;
     }
@@ -241,34 +246,33 @@ class Item {
 // Bill / Invoice
 // ---------------------------------------------------------------------------
 
-class MeasureLine {
+/// Bill ki kaam wali line — sirf naam aur amount (koi measurement nahi).
+class AmountLine {
   String label;
-  double lengthFt;
-  double widthFt;
-  double ratePerSqft;
+  double amount;
 
-  MeasureLine({
+  AmountLine({
     this.label = '',
-    this.lengthFt = 0,
-    this.widthFt = 0,
-    this.ratePerSqft = 0,
+    this.amount = 0,
   });
-
-  double get sqft => lengthFt * widthFt;
-  double get amount => sqft * ratePerSqft;
 
   Map<String, dynamic> toJson() => {
         'label': label,
-        'lengthFt': lengthFt,
-        'widthFt': widthFt,
-        'ratePerSqft': ratePerSqft,
+        'amount': amount,
       };
 
-  factory MeasureLine.fromJson(Map<String, dynamic> j) => MeasureLine(
+  factory AmountLine.fromJson(Map<String, dynamic> j) => AmountLine(
         label: (j['label'] ?? '') as String,
-        lengthFt: (j['lengthFt'] ?? 0).toDouble(),
-        widthFt: (j['widthFt'] ?? 0).toDouble(),
-        ratePerSqft: (j['ratePerSqft'] ?? 0).toDouble(),
+        amount: (j['amount'] ?? 0).toDouble(),
+      );
+
+  /// Purani (v1.0/v1.1) measurement line se convert — purane saved bills
+  /// khoonay par amount = lambai x chorai x rate.
+  factory AmountLine.fromOldMeasureJson(Map<String, dynamic> j) => AmountLine(
+        label: (j['label'] ?? '') as String,
+        amount: ((j['lengthFt'] ?? 0) as num).toDouble() *
+            ((j['widthFt'] ?? 0) as num).toDouble() *
+            ((j['ratePerSqft'] ?? 0) as num).toDouble(),
       );
 }
 
@@ -311,7 +315,7 @@ class Bill {
   final int number; // Bill No (1, 2, 3...)
   final String partyId;
   final String partyName;
-  final List<MeasureLine> measureLines;
+  final List<AmountLine> amountLines;
   final List<MaterialLine> materialLines;
   final double extraCharges;
   final String extraNote;
@@ -324,7 +328,7 @@ class Bill {
     required this.number,
     required this.partyId,
     required this.partyName,
-    required this.measureLines,
+    required this.amountLines,
     required this.materialLines,
     this.extraCharges = 0,
     this.extraNote = '',
@@ -333,11 +337,11 @@ class Bill {
     this.note = '',
   });
 
-  double get measureTotal =>
-      measureLines.fold(0.0, (s, l) => s + l.amount);
+  double get amountTotal =>
+      amountLines.fold(0.0, (s, l) => s + l.amount);
   double get materialTotal =>
       materialLines.fold(0.0, (s, l) => s + l.amount);
-  double get total => measureTotal + materialTotal + extraCharges;
+  double get total => amountTotal + materialTotal + extraCharges;
   double get baqaya => total - advance;
 
   Map<String, dynamic> toJson() => {
@@ -345,7 +349,7 @@ class Bill {
         'number': number,
         'partyId': partyId,
         'partyName': partyName,
-        'measureLines': measureLines.map((e) => e.toJson()).toList(),
+        'amountLines': amountLines.map((e) => e.toJson()).toList(),
         'materialLines': materialLines.map((e) => e.toJson()).toList(),
         'extraCharges': extraCharges,
         'extraNote': extraNote,
@@ -359,9 +363,14 @@ class Bill {
         number: (j['number'] ?? 0) as int,
         partyId: (j['partyId'] ?? '') as String,
         partyName: (j['partyName'] ?? '') as String,
-        measureLines: ((j['measureLines'] ?? []) as List)
-            .map((e) => MeasureLine.fromJson(e as Map<String, dynamic>))
-            .toList(),
+        amountLines: j['amountLines'] != null
+            ? ((j['amountLines'] as List)
+                .map((e) => AmountLine.fromJson(e as Map<String, dynamic>))
+                .toList())
+            : ((j['measureLines'] ?? []) as List)
+                .map((e) => AmountLine.fromOldMeasureJson(
+                    e as Map<String, dynamic>))
+                .toList(),
         materialLines: ((j['materialLines'] ?? []) as List)
             .map((e) => MaterialLine.fromJson(e as Map<String, dynamic>))
             .toList(),

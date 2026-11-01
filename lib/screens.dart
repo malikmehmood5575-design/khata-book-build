@@ -116,7 +116,7 @@ void _showQuickAdd(BuildContext context) {
           ListTile(
             leading: const Icon(Icons.receipt_long, color: kNavy),
             title: const Text('Naya Bill'),
-            subtitle: const Text('Sq ft measurement + material'),
+            subtitle: const Text('Kaam ki amount + material'),
             onTap: () {
               Navigator.pop(ctx);
               push(context, const BillFormScreen());
@@ -732,6 +732,12 @@ class PartyDetailScreen extends StatelessWidget {
                     onTap: () => push(context,
                         LedgerEntryFormScreen(party: party, type: 'paymentDi')),
                   ),
+                  _ActionChip(
+                    icon: Icons.money_off,
+                    label: 'Kharcha',
+                    onTap: () => push(context,
+                        LedgerEntryFormScreen(party: party, type: 'kharcha')),
+                  ),
                 ],
               ),
             ),
@@ -897,6 +903,8 @@ class _LedgerEntryFormScreenState extends State<LedgerEntryFormScreen> {
         return 'Payment Mili';
       case 'paymentDi':
         return 'Payment Di';
+      case 'kharcha':
+        return 'Kharcha';
       default:
         return 'Entry';
     }
@@ -1951,24 +1959,18 @@ class BillsListScreen extends StatelessWidget {
 }
 
 // ===========================================================================
-// Bill banana — sq ft measurement + material
+// Bill banana — kaam ki amount lines + material
 // ===========================================================================
 
-class _MeasureEdit {
+class _AmountEdit {
   final label = TextEditingController();
-  final len = TextEditingController();
-  final wid = TextEditingController();
-  final rate = TextEditingController();
+  final amount = TextEditingController();
 
-  double get sqft =>
-      (double.tryParse(len.text) ?? 0) * (double.tryParse(wid.text) ?? 0);
-  double get amount => sqft * (double.tryParse(rate.text) ?? 0);
+  double get amountValue => double.tryParse(amount.text) ?? 0;
 
   void dispose() {
     label.dispose();
-    len.dispose();
-    wid.dispose();
-    rate.dispose();
+    amount.dispose();
   }
 }
 
@@ -1997,7 +1999,7 @@ class BillFormScreen extends StatefulWidget {
 
 class _BillFormScreenState extends State<BillFormScreen> {
   Party? _party;
-  final _measures = <_MeasureEdit>[_MeasureEdit()];
+  final _lines = <_AmountEdit>[_AmountEdit()];
   final _materials = <_MaterialEdit>[];
   final _extra = TextEditingController();
   final _extraNote = TextEditingController();
@@ -2006,18 +2008,18 @@ class _BillFormScreenState extends State<BillFormScreen> {
   DateTime _date = DateTime.now();
   bool _saving = false;
 
-  double get _measureTotal =>
-      _measures.fold(0.0, (s, m) => s + m.amount);
+  double get _amountTotal =>
+      _lines.fold(0.0, (s, m) => s + m.amountValue);
   double get _materialTotal =>
       _materials.fold(0.0, (s, m) => s + m.amount);
   double get _extraAmt => double.tryParse(_extra.text) ?? 0;
-  double get _total => _measureTotal + _materialTotal + _extraAmt;
+  double get _total => _amountTotal + _materialTotal + _extraAmt;
   double get _advAmt => double.tryParse(_advance.text) ?? 0;
   double get _baqaya => _total - _advAmt;
 
   @override
   void dispose() {
-    for (final m in _measures) {
+    for (final m in _lines) {
       m.dispose();
     }
     for (final m in _materials) {
@@ -2069,19 +2071,17 @@ class _BillFormScreenState extends State<BillFormScreen> {
       return;
     }
     if (_total <= 0) {
-      toast(context, 'Bill ka total zero hai — measurement ya material jodo');
+      toast(context, 'Bill ka total zero hai — amount line ya material jodo');
       return;
     }
     setState(() => _saving = true);
-    final measureLines = _measures
-        .where((m) => m.sqft > 0)
-        .map((m) => MeasureLine(
+    final amountLines = _lines
+        .where((m) => m.amountValue > 0)
+        .map((m) => AmountLine(
               label: m.label.text.trim().isEmpty
-                  ? 'Ceiling'
+                  ? 'Ceiling Kaam'
                   : m.label.text.trim(),
-              lengthFt: double.tryParse(m.len.text) ?? 0,
-              widthFt: double.tryParse(m.wid.text) ?? 0,
-              ratePerSqft: double.tryParse(m.rate.text) ?? 0,
+              amount: m.amountValue,
             ))
         .toList();
     final materialLines = _materials
@@ -2096,7 +2096,7 @@ class _BillFormScreenState extends State<BillFormScreen> {
         .toList();
     final bill = await store.createBill(
       party: _party!,
-      measureLines: measureLines,
+      amountLines: amountLines,
       materialLines: materialLines,
       extraCharges: _extraAmt,
       extraNote: _extraNote.text.trim(),
@@ -2159,91 +2159,58 @@ class _BillFormScreenState extends State<BillFormScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Measurement (Sq Ft)',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+              const Expanded(
+                child: Text('Kaam ki lines — sirf amount likho',
+                    style:
+                        TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+              ),
               TextButton.icon(
-                onPressed: () =>
-                    setState(() => _measures.add(_MeasureEdit())),
+                onPressed: () => setState(() => _lines.add(_AmountEdit())),
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Line Jodo'),
               ),
             ],
           ),
-          ..._measures.asMap().entries.map((entry) {
+          ..._lines.asMap().entries.map((entry) {
             final idx = entry.key;
             final m = entry.value;
             return Card(
               margin: const EdgeInsets.symmetric(vertical: 4),
               child: Padding(
                 padding: const EdgeInsets.all(10),
-                child: Column(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: m.label,
-                            decoration: InputDecoration(
-                                labelText: 'Jagah / Kamra ${idx + 1}',
-                                hintText: 'Masalan: Drawing Room'),
-                          ),
-                        ),
-                        if (_measures.length > 1)
-                          IconButton(
-                            icon: const Icon(Icons.remove_circle_outline,
-                                color: kRed),
-                            onPressed: () => setState(() {
-                              _measures[idx].dispose();
-                              _measures.removeAt(idx);
-                            }),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: m.len,
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            decoration:
-                                const InputDecoration(labelText: 'Lambai (ft)'),
-                            onChanged: (_) => setState(() {}),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: m.wid,
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            decoration:
-                                const InputDecoration(labelText: 'Chorai (ft)'),
-                            onChanged: (_) => setState(() {}),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: m.rate,
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            decoration: const InputDecoration(
-                                labelText: 'Rate / Sq Ft'),
-                            onChanged: (_) => setState(() {}),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        '= ${qtyFmt(m.sqft)} sq ft · ${rs(m.amount)}',
-                        style: const TextStyle(fontWeight: FontWeight.w800),
+                    Expanded(
+                      flex: 3,
+                      child: TextField(
+                        controller: m.label,
+                        decoration: InputDecoration(
+                            labelText: 'Kaam / Jagah ${idx + 1}',
+                            hintText: 'Masalan: Drawing Room Ceiling'),
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: m.amount,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        decoration:
+                            const InputDecoration(labelText: 'Amount (Rs)'),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ),
+                    if (_lines.length > 1)
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle_outline,
+                            color: kRed),
+                        onPressed: () => setState(() {
+                          _lines[idx].dispose();
+                          _lines.removeAt(idx);
+                        }),
+                      ),
                   ],
                 ),
               ),
@@ -2375,7 +2342,7 @@ class _BillFormScreenState extends State<BillFormScreen> {
             ),
             child: Column(
               children: [
-                _totalRow('Measurement Total', rs(_measureTotal), false),
+                _totalRow('Kaam Total', rs(_amountTotal), false),
                 _totalRow('Material Total', rs(_materialTotal), false),
                 if (_extraAmt > 0)
                   _totalRow('Extra', rs(_extraAmt), false),
@@ -2471,21 +2438,17 @@ class BillDetailScreen extends StatelessWidget {
                 ),
               ),
             ),
-            if (bill.measureLines.isNotEmpty) ...[
+            if (bill.amountLines.isNotEmpty) ...[
               const Padding(
                 padding: EdgeInsets.fromLTRB(14, 10, 14, 2),
-                child: Text('Measurement (Ceiling)',
+                child: Text('Kaam',
                     style:
                         TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
               ),
-              ...bill.measureLines.map((l) => Card(
+              ...bill.amountLines.map((l) => Card(
                     child: ListTile(
                       dense: true,
-                      title: Text(l.label),
-                      subtitle: Text(
-                          '${qtyFmt(l.lengthFt)} x ${qtyFmt(l.widthFt)} ft = ${qtyFmt(l.sqft)} sq ft @ ${rs(l.ratePerSqft)}'),
-                      trailing: Text(rs(l.amount),
-                          style: const TextStyle(fontWeight: FontWeight.w800)),
+                      title: Text('${l.label} — ${rs(l.amount)}'),
                     ),
                   )),
             ],
