@@ -15,6 +15,7 @@ class AppStore extends ChangeNotifier {
 
   List<Party> parties = [];
   List<LedgerEntry> ledger = [];
+  List<Karigar> karigars = [];
   List<CashEntry> cashbook = [];
   List<Expense> expenses = [];
   List<Item> items = [];
@@ -54,6 +55,10 @@ class AppStore extends ChangeNotifier {
     ledger = ((j['ledger'] ?? []) as List)
         .map((e) => LedgerEntry.fromJson(e as Map<String, dynamic>))
         .toList();
+    // Purane data/backups me karigars nahi hain — absent ho to khali list.
+    karigars = ((j['karigars'] ?? []) as List)
+        .map((e) => Karigar.fromJson(e as Map<String, dynamic>))
+        .toList();
     cashbook = ((j['cashbook'] ?? []) as List)
         .map((e) => CashEntry.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -77,6 +82,7 @@ class AppStore extends ChangeNotifier {
   Map<String, dynamic> toJson() => {
         'parties': parties.map((e) => e.toJson()).toList(),
         'ledger': ledger.map((e) => e.toJson()).toList(),
+        'karigars': karigars.map((e) => e.toJson()).toList(),
         'cashbook': cashbook.map((e) => e.toJson()).toList(),
         'expenses': expenses.map((e) => e.toJson()).toList(),
         'items': items.map((e) => e.toJson()).toList(),
@@ -119,6 +125,63 @@ class AppStore extends ChangeNotifier {
     return list;
   }
 
+  // -------------------------------------------------------------------------
+  // v1.4 Advance model — Baqi Paisa (advance - kharcha)
+  // -------------------------------------------------------------------------
+
+  /// Customer ka kitna paisa abhi hamaray paas baqi hai.
+  double partyBaqi(String partyId) {
+    double b = 0;
+    for (final e in ledger) {
+      if (e.partyId == partyId) b += e.baqiEffect;
+    }
+    return b;
+  }
+
+  /// Customer se kul kitna advance liya (legacy paymentMili bhi shamil,
+  /// kyun ke purane model me wahi advance ka kaam karti thi).
+  double partyAdvanceTotal(String partyId) {
+    double t = 0;
+    for (final e in ledger) {
+      if (e.partyId != partyId) continue;
+      if (e.type == 'advance' || e.type == 'paymentMili') t += e.amount;
+    }
+    return t;
+  }
+
+  /// Customer ke paisay mein se kul kitna kharcha hua.
+  double partyKharchaTotal(String partyId) {
+    double t = 0;
+    for (final e in ledger) {
+      if (e.partyId == partyId && e.type == 'kharcha') t += e.amount;
+    }
+    return t;
+  }
+
+  double get totalBaqi {
+    double t = 0;
+    for (final p in parties) {
+      t += partyBaqi(p.id);
+    }
+    return t;
+  }
+
+  double get totalAdvance {
+    double t = 0;
+    for (final p in parties) {
+      t += partyAdvanceTotal(p.id);
+    }
+    return t;
+  }
+
+  double get totalKharcha {
+    double t = 0;
+    for (final p in parties) {
+      t += partyKharchaTotal(p.id);
+    }
+    return t;
+  }
+
   Future<void> addParty(Party p) async {
     parties.add(p);
     await save();
@@ -134,36 +197,123 @@ class AppStore extends ChangeNotifier {
     await save();
   }
 
+  /// Ledger entry ki type CashBook me kis simt jati hai:
+  /// true = IN (paisa aaya), false = OUT (paisa gaya), null = cash posting
+  /// hoti hi nahi (udhaar wali legacy types).
+  bool? _cashDirection(String type) {
+    switch (type) {
+      case 'paymentMili':
+      case 'advance':
+        return true;
+      case 'paymentDi':
+      case 'kharcha':
+        return false;
+      default:
+        return null;
+    }
+  }
+
+  /// CashBook entry ka note — posting aur delete-cascade dono yahi istemal
+  /// karte hain taake hamesha ek jaisi pehchaan bane.
+  String _cashNoteFor(LedgerEntry e) {
+    if (e.note.isNotEmpty) return e.note;
+    switch (e.type) {
+      case 'advance':
+        return 'Advance';
+      case 'kharcha':
+        return 'Kharcha';
+      default:
+        return 'Khata payment';
+    }
+  }
+
   Future<void> addLedgerEntry(LedgerEntry e, {bool alsoCash = false}) async {
     ledger.add(e);
-    // CashBook se link: payment mili/di cash me bhi darj ho jati hai.
-    if (alsoCash) {
-      if (e.type == 'paymentMili') {
-        cashbook.add(CashEntry(
-          id: newId(),
-          isIn: true,
-          amount: e.amount,
-          note: e.note.isEmpty ? 'Khata payment' : e.note,
-          date: e.date,
-          partyId: e.partyId,
-        ));
-      } else if (e.type == 'paymentDi') {
-        cashbook.add(CashEntry(
-          id: newId(),
-          isIn: false,
-          amount: e.amount,
-          note: e.note.isEmpty ? 'Khata payment' : e.note,
-          date: e.date,
-          partyId: e.partyId,
-        ));
-      }
+    // CashBook se link: paisa aane wali entries (paymentMili + advance)
+    // cash me IN, paisa jane wali (paymentDi + kharcha) cash me OUT darj
+    // ho jati hain — jab cash toggle ON ho.
+    // NOTE: v1.2 me kharcha ko CashBook se bahar rakha gaya tha; v1.4 me
+    // client ke advance model ki wazahat ke baad wo rule KHATAM hai —
+    // kharcha bhi galle se hi kata jata hai (toggle ON ho to).
+    final dir = _cashDirection(e.type);
+    if (alsoCash && dir != null) {
+      cashbook.add(CashEntry(
+        id: newId(),
+        isIn: dir,
+        amount: e.amount,
+        note: _cashNoteFor(e),
+        date: e.date,
+        partyId: e.partyId,
+      ));
     }
     await save();
   }
 
   Future<void> deleteLedgerEntry(String id) async {
-    ledger.removeWhere((e) => e.id == id);
+    final e = ledger.where((x) => x.id == id).firstOrNull;
+    if (e != null) {
+      // Linked CashBook entry bhi sath delete ho — jo entry add par cash
+      // me darj hui thi (partyId + date + raqam + simt + note se pehchan).
+      final dir = _cashDirection(e.type);
+      if (dir != null) {
+        final note = _cashNoteFor(e);
+        final idx = cashbook.indexWhere((c) =>
+            c.partyId == e.partyId &&
+            c.isIn == dir &&
+            c.amount == e.amount &&
+            c.date == e.date &&
+            c.note == note);
+        if (idx >= 0) cashbook.removeAt(idx);
+      }
+    }
+    ledger.removeWhere((x) => x.id == id);
     await save();
+  }
+
+  // -------------------------------------------------------------------------
+  // Karigar — workers jin ko customer ke advance mein se payment jati hai
+  // -------------------------------------------------------------------------
+
+  Karigar? karigarById(String id) {
+    for (final k in karigars) {
+      if (k.id == id) return k;
+    }
+    return null;
+  }
+
+  Future<void> addKarigar(Karigar k) async {
+    karigars.add(k);
+    await save();
+  }
+
+  Future<void> updateKarigar(Karigar k) async {
+    await save();
+  }
+
+  /// Karigar delete honay par us ki purani kharcha entries nahi mitti —
+  /// un par karigarId laga rehta hai (detail lookup missing karigar ko
+  /// bardasht karta hai aur sirf 'Karigar' label dikhata hai).
+  Future<void> deleteKarigar(String id) async {
+    karigars.removeWhere((k) => k.id == id);
+    await save();
+  }
+
+  /// Is karigar ko ab tak kul kitna paisa diya gaya.
+  double karigarTotalPaid(String karigarId) {
+    double t = 0;
+    for (final e in ledger) {
+      if (e.type == 'kharcha' && e.karigarId == karigarId) t += e.amount;
+    }
+    return t;
+  }
+
+  /// Karigar ki saari payments (kharcha entries), nayi pehle.
+  List<LedgerEntry> entriesForKarigar(String karigarId) {
+    final list = ledger
+        .where((e) => e.type == 'kharcha' && e.karigarId == karigarId)
+        .toList();
+    list.sort((a, b) => b.date.compareTo(a.date));
+    return list;
   }
 
   // -------------------------------------------------------------------------

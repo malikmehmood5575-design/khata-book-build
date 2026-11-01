@@ -10,19 +10,30 @@ String newId() {
 // ---------------------------------------------------------------------------
 
 /// Khata entry ki type:
-/// udhaarDiya  = customer ko udhaar diya (balance barhta hai, lena hai)
-/// udhaarLiya  = supplier se udhaar liya (balance negative, dena hai)
-/// paymentMili = customer se payment mili (balance kam)
-/// paymentDi   = supplier ko payment di (balance negative se kam)
-/// kharcha     = is client/site par kharcha hua (balance kam, lena kam)
+/// advance     = customer se advance paisa liya (v1.4 ka asal model — paisa
+///               hamaray paas, customer ka baqi barhta hai)
+/// kharcha     = customer ke advance mein se kharcha hua (baqi kam hota hai);
+///               karigar ko di gayi payment bhi kharcha hi hai (karigarId set)
+/// udhaarDiya  = customer ko udhaar diya (purana model — sirf legacy data)
+/// udhaarLiya  = supplier se udhaar liya (legacy)
+/// paymentMili = customer se payment mili (legacy — baqi par advance jaisa asar)
+/// paymentDi   = supplier ko payment di (legacy)
 class LedgerEntry {
   final String id;
   final String partyId;
-  final String type; // udhaarDiya | udhaarLiya | paymentMili | paymentDi | kharcha
+  final String type; // advance | kharcha | udhaarDiya | udhaarLiya | paymentMili | paymentDi
   final double amount;
   final String note;
   final DateTime date;
   final String? billId;
+
+  /// Sirf kharcha entries par: kis karigar ko payment gayi (agar gayi ho).
+  final String? karigarId;
+
+  /// Sirf kharcha entries par: kharcha ki qisam ('Material', 'Doosra',
+  /// ya doosra ka apna likha naam, masalan 'Khana'). Karigar wale kharche
+  /// par null rehta hai.
+  final String? kharchaLabel;
 
   LedgerEntry({
     required this.id,
@@ -32,6 +43,8 @@ class LedgerEntry {
     required this.note,
     required this.date,
     this.billId,
+    this.karigarId,
+    this.kharchaLabel,
   });
 
   /// Balance par asar: + lena hai, - dena hai
@@ -52,8 +65,33 @@ class LedgerEntry {
     }
   }
 
+  /// v1.4 advance model par asar: + matlab customer ka paisa hamaray paas
+  /// barha (Baqi Paisa), - matlab us paisay mein se kharcha ho gaya.
+  /// Legacy types ka mapping sirf is liye hai ke purana test data bhi
+  /// sane tareeqay se render ho.
+  double get baqiEffect {
+    switch (type) {
+      case 'advance':
+        return amount;
+      case 'kharcha':
+        return -amount;
+      case 'paymentMili':
+        return amount;
+      case 'paymentDi':
+        return -amount;
+      case 'udhaarDiya':
+        return -amount;
+      case 'udhaarLiya':
+        return amount;
+      default:
+        return 0;
+    }
+  }
+
   String get typeLabel {
     switch (type) {
+      case 'advance':
+        return 'Advance';
       case 'udhaarDiya':
         return 'Udhaar Diya';
       case 'udhaarLiya':
@@ -77,6 +115,8 @@ class LedgerEntry {
         'note': note,
         'date': date.toIso8601String(),
         'billId': billId,
+        'karigarId': karigarId,
+        'kharchaLabel': kharchaLabel,
       };
 
   factory LedgerEntry.fromJson(Map<String, dynamic> j) => LedgerEntry(
@@ -87,6 +127,9 @@ class LedgerEntry {
         note: (j['note'] ?? '') as String,
         date: DateTime.parse(j['date'] as String),
         billId: j['billId'] as String?,
+        // Purane data me ye fields nahi hain — absent ho to null.
+        karigarId: j['karigarId'] as String?,
+        kharchaLabel: j['kharchaLabel'] as String?,
       );
 }
 
@@ -119,6 +162,46 @@ class Party {
         phone: (j['phone'] ?? '') as String,
         siteName: (j['siteName'] ?? '') as String,
         isSupplier: (j['isSupplier'] ?? false) as bool,
+      );
+}
+
+// ---------------------------------------------------------------------------
+// Karigar (worker) — customer ke advance mein se in ko payment jati hai.
+// Har karigar payment ek 'kharcha' LedgerEntry hai jis par karigarId laga
+// hota hai; isi liye karigar ki apni history bhi wohi entries hain.
+// ---------------------------------------------------------------------------
+
+class Karigar {
+  final String id;
+  String name;
+  String phone;
+  String note;
+  final DateTime createdAt;
+
+  Karigar({
+    required this.id,
+    required this.name,
+    this.phone = '',
+    this.note = '',
+    required this.createdAt,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'phone': phone,
+        'note': note,
+        'createdAt': createdAt.toIso8601String(),
+      };
+
+  factory Karigar.fromJson(Map<String, dynamic> j) => Karigar(
+        id: j['id'] as String,
+        name: (j['name'] ?? '') as String,
+        phone: (j['phone'] ?? '') as String,
+        note: (j['note'] ?? '') as String,
+        createdAt: j['createdAt'] != null
+            ? DateTime.parse(j['createdAt'] as String)
+            : DateTime.now(),
       );
 }
 
