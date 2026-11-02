@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import 'models.dart';
 import 'store.dart';
 import 'helpers.dart';
@@ -80,8 +81,11 @@ Widget baqiChip(double baqi) {
     ),
     child: Text(
       neg ? 'Aur lena hai ${rs(-baqi)}' : 'Baqi ${rs(baqi)}',
-      style:
-          TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: color),
+      style: TextStyle(
+        fontSize: 11.5,
+        fontWeight: FontWeight.w800,
+        color: color,
+      ),
     ),
   );
 }
@@ -127,25 +131,29 @@ class _MainShellState extends State<MainShell> {
           onDestinationSelected: _onNavTap,
           destinations: const [
             NavigationDestination(
-                icon: Icon(Icons.home_outlined),
-                selectedIcon: Icon(Icons.home),
-                label: 'Home'),
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home),
+              label: 'Home',
+            ),
             NavigationDestination(
-                icon: Icon(Icons.people_outline),
-                selectedIcon: Icon(Icons.people),
-                label: 'Customers'),
+              icon: Icon(Icons.people_outline),
+              selectedIcon: Icon(Icons.people),
+              label: 'Customers',
+            ),
             NavigationDestination(
               icon: Icon(Icons.add_circle, color: kAmber, size: 38),
               label: 'Naya',
             ),
             NavigationDestination(
-                icon: Icon(Icons.engineering_outlined),
-                selectedIcon: Icon(Icons.engineering),
-                label: 'Karigar'),
+              icon: Icon(Icons.engineering_outlined),
+              selectedIcon: Icon(Icons.engineering),
+              label: 'Karigar',
+            ),
             NavigationDestination(
-                icon: Icon(Icons.settings_outlined),
-                selectedIcon: Icon(Icons.settings),
-                label: 'Settings'),
+              icon: Icon(Icons.settings_outlined),
+              selectedIcon: Icon(Icons.settings),
+              label: 'Settings',
+            ),
           ],
         ),
       ),
@@ -164,8 +172,10 @@ void _showQuickAdd(BuildContext context) {
             padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Text('Naya kya karna hai?',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+              child: Text(
+                'Naya kya karna hai?',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+              ),
             ),
           ),
           ListTile(
@@ -183,7 +193,7 @@ void _showQuickAdd(BuildContext context) {
             subtitle: const Text('Customer ke advance mein se kharcha'),
             onTap: () {
               Navigator.pop(ctx);
-              push(context, const EntryPartyPickerScreen(kind: 'kharcha'));
+              push(context, const KharchaFormScreen());
             },
           ),
           ListTile(
@@ -241,19 +251,20 @@ class HomeScreen extends StatelessWidget {
         }
         if (e.type == 'kharcha') khToday += e.amount;
       }
-      final recent = store.ledger
-          .where((e) =>
-              e.type == 'advance' ||
-              e.type == 'kharcha' ||
-              e.type == 'paymentMili' ||
-              e.type == 'paymentDi')
-          .toList()
-        ..sort((a, b) => b.date.compareTo(a.date));
+      final recent =
+          store.ledger
+              .where(
+                (e) =>
+                    e.type == 'advance' ||
+                    e.type == 'kharcha' ||
+                    e.type == 'paymentMili' ||
+                    e.type == 'paymentDi',
+              )
+              .toList()
+            ..sort((a, b) => b.date.compareTo(a.date));
 
       return Scaffold(
-        appBar: AppBar(
-          title: Text(store.businessName),
-        ),
+        appBar: AppBar(title: Text(store.businessName)),
         body: ListView(
           padding: const EdgeInsets.only(top: 8, bottom: 20),
           children: [
@@ -268,30 +279,42 @@ class HomeScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Baqi Paisa — sab customers ka',
-                      style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  Text(rs(store.totalBaqi),
-                      style: const TextStyle(
-                          color: kAmber,
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800)),
+                  const Text(
+                    'Baqi Paisa — sab customers ka',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                  Text(
+                    rs(store.totalBaqi),
+                    style: const TextStyle(
+                      color: kAmber,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   Row(
                     children: [
                       Expanded(
-                        child: Text('Kul Advance: ${rs(store.totalAdvance)}',
-                            style: const TextStyle(color: Colors.white)),
+                        child: Text(
+                          'Kul Advance: ${rs(store.totalAdvance)}',
+                          style: const TextStyle(color: Colors.white),
+                        ),
                       ),
-                      Text('Kul Kharcha: ${rs(store.totalKharcha)}',
-                          style: const TextStyle(color: Colors.white)),
+                      Text(
+                        'Kul Kharcha: ${rs(store.totalKharcha)}',
+                        style: const TextStyle(color: Colors.white),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text('Cash (galla): ${rs(store.cashBalance())}',
-                      style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600)),
+                  Text(
+                    'Cash (galla): ${rs(store.cashBalance())}',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -304,14 +327,21 @@ class HomeScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Aaj Advance',
-                              style: TextStyle(
-                                  fontSize: 11.5, color: Colors.black54)),
-                          Text(rs(advToday),
-                              style: const TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w800,
-                                  color: kGreen)),
+                          const Text(
+                            'Aaj Advance',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: Colors.black54,
+                            ),
+                          ),
+                          Text(
+                            rs(advToday),
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: kGreen,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -324,14 +354,21 @@ class HomeScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Aaj Kharcha',
-                              style: TextStyle(
-                                  fontSize: 11.5, color: Colors.black54)),
-                          Text(rs(khToday),
-                              style: const TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w800,
-                                  color: kRed)),
+                          const Text(
+                            'Aaj Kharcha',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: Colors.black54,
+                            ),
+                          ),
+                          Text(
+                            rs(khToday),
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: kRed,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -349,8 +386,10 @@ class HomeScreen extends StatelessWidget {
                       icon: Icons.arrow_downward,
                       title: 'Advance Liya',
                       subtitle: 'Customer se paisa aaya',
-                      onTap: () => push(context,
-                          const EntryPartyPickerScreen(kind: 'advance')),
+                      onTap: () => push(
+                        context,
+                        const EntryPartyPickerScreen(kind: 'advance'),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -360,8 +399,7 @@ class HomeScreen extends StatelessWidget {
                       icon: Icons.arrow_upward,
                       title: 'Kharcha Karo',
                       subtitle: 'Paisa kharch hua',
-                      onTap: () => push(context,
-                          const EntryPartyPickerScreen(kind: 'kharcha')),
+                      onTap: () => push(context, const KharchaFormScreen()),
                     ),
                   ),
                 ],
@@ -369,14 +407,17 @@ class HomeScreen extends StatelessWidget {
             ),
             const Padding(
               padding: EdgeInsets.fromLTRB(14, 14, 14, 2),
-              child: Text('Haal ki activity',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+              child: Text(
+                'Haal ki activity',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              ),
             ),
             if (recent.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(14),
                 child: Text(
-                    'Abhi koi activity nahi. Advance Liya / Kharcha Karo button se pehli entry karo.'),
+                  'Abhi koi activity nahi. Advance Liya / Kharcha Karo button se pehli entry karo.',
+                ),
               ),
             ...recent.take(10).map((e) {
               final p = store.partyById(e.partyId);
@@ -386,12 +427,14 @@ class HomeScreen extends StatelessWidget {
                   dense: true,
                   title: Text('${p?.name ?? ''} — ${entryLabel(e)}'),
                   subtitle: Text(
-                      '${fmtDate(e.date)}${e.note.isNotEmpty ? ' · ${e.note}' : ''}'),
+                    '${fmtDate(e.date)}${e.note.isNotEmpty ? ' · ${e.note}' : ''}',
+                  ),
                   trailing: Text(
                     '${pos ? '+' : '-'}${rs(e.amount)}',
                     style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: pos ? kGreen : kRed),
+                      fontWeight: FontWeight.w800,
+                      color: pos ? kGreen : kRed,
+                    ),
                   ),
                 ),
               );
@@ -432,13 +475,18 @@ class _BigPayButton extends StatelessWidget {
           children: [
             Icon(icon, color: Colors.white, size: 28),
             const SizedBox(height: 6),
-            Text(title,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800)),
-            Text(subtitle,
-                style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            Text(
+              subtitle,
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+            ),
           ],
         ),
       ),
@@ -474,7 +522,9 @@ class EntryPartyPickerScreen extends StatelessWidget {
     } else if (kind == 'karigarKharcha') {
       screen = KharchaFormScreen(
         party: p,
-        initialKarigar: karigarId == null ? null : store.karigarById(karigarId!),
+        initialKarigar: karigarId == null
+            ? null
+            : store.karigarById(karigarId!),
       );
     } else {
       screen = KharchaFormScreen(party: p);
@@ -523,15 +573,21 @@ class EntryPartyPickerScreen extends StatelessWidget {
                         child: Text(
                           p.name.isNotEmpty ? p.name[0].toUpperCase() : '?',
                           style: const TextStyle(
-                              color: kAmber, fontWeight: FontWeight.w800),
+                            color: kAmber,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
-                      title: Text(p.name,
-                          style: const TextStyle(fontWeight: FontWeight.w700)),
-                      subtitle: Text([
-                        if (p.siteName.isNotEmpty) 'Site: ${p.siteName}',
-                        p.isSupplier ? 'Supplier' : 'Customer',
-                      ].join(' · ')),
+                      title: Text(
+                        p.name,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      subtitle: Text(
+                        [
+                          if (p.siteName.isNotEmpty) 'Site: ${p.siteName}',
+                          p.isSupplier ? 'Supplier' : 'Customer',
+                        ].join(' · '),
+                      ),
                       trailing: baqiChip(store.partyBaqi(p.id)),
                       onTap: () => _open(context, p),
                     ),
@@ -570,7 +626,8 @@ class KarigarPickerScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 14),
                       ElevatedButton.icon(
-                        onPressed: () => push(context, const KarigarFormScreen()),
+                        onPressed: () =>
+                            push(context, const KarigarFormScreen()),
                         icon: const Icon(Icons.person_add),
                         label: const Text('Naya Karigar'),
                       ),
@@ -590,28 +647,39 @@ class KarigarPickerScreen extends StatelessWidget {
                         child: Text(
                           k.name.isNotEmpty ? k.name[0].toUpperCase() : '?',
                           style: const TextStyle(
-                              color: kAmber, fontWeight: FontWeight.w800),
+                            color: kAmber,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
-                      title: Text(k.name,
-                          style: const TextStyle(fontWeight: FontWeight.w700)),
+                      title: Text(
+                        k.name,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
                       subtitle: Text(k.phone.isNotEmpty ? k.phone : 'Karigar'),
                       trailing: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text(rs(store.karigarTotalPaid(k.id)),
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w800)),
-                          const Text('Kul diya',
-                              style: TextStyle(
-                                  fontSize: 10, color: Colors.black54)),
+                          Text(
+                            rs(store.karigarTotalPaid(k.id)),
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          const Text(
+                            'Kul diya',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.black54,
+                            ),
+                          ),
                         ],
                       ),
                       onTap: () => Navigator.of(context).pushReplacement(
                         MaterialPageRoute(
                           builder: (_) => EntryPartyPickerScreen(
-                              kind: 'karigarKharcha', karigarId: k.id),
+                            kind: 'karigarKharcha',
+                            karigarId: k.id,
+                          ),
                         ),
                       ),
                     ),
@@ -640,15 +708,19 @@ class _KhataScreenState extends State<KhataScreen> {
   @override
   Widget build(BuildContext context) {
     return storeBuilder((context) {
-      final list = store.parties.where((p) {
-        final q = _q.toLowerCase();
-        return q.isEmpty ||
-            p.name.toLowerCase().contains(q) ||
-            p.siteName.toLowerCase().contains(q) ||
-            p.phone.contains(q);
-      }).toList()
-        ..sort((a, b) =>
-            store.partyBaqi(b.id).abs().compareTo(store.partyBaqi(a.id).abs()));
+      final list =
+          store.parties.where((p) {
+            final q = _q.toLowerCase();
+            return q.isEmpty ||
+                p.name.toLowerCase().contains(q) ||
+                p.siteName.toLowerCase().contains(q) ||
+                p.phone.contains(q);
+          }).toList()..sort(
+            (a, b) => store
+                .partyBaqi(b.id)
+                .abs()
+                .compareTo(store.partyBaqi(a.id).abs()),
+          );
 
       return Scaffold(
         appBar: AppBar(title: const Text('Customers')),
@@ -672,7 +744,10 @@ class _KhataScreenState extends State<KhataScreen> {
             Expanded(
               child: list.isEmpty
                   ? const Center(
-                      child: Text('Koi customer nahi. "Naya Customer" se jodo.'))
+                      child: Text(
+                        'Koi customer nahi. "Naya Customer" se jodo.',
+                      ),
+                    )
                   : ListView.builder(
                       padding: const EdgeInsets.only(bottom: 84),
                       itemCount: list.length,
@@ -689,18 +764,27 @@ class _KhataScreenState extends State<KhataScreen> {
                                     ? p.name[0].toUpperCase()
                                     : '?',
                                 style: const TextStyle(
-                                    color: kAmber, fontWeight: FontWeight.w800),
+                                  color: kAmber,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
                             ),
-                            title: Text(p.name,
-                                style: const TextStyle(fontWeight: FontWeight.w700)),
-                            subtitle: Text([
+                            title: Text(
+                              p.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            subtitle: Text(
                               [
-                                if (p.siteName.isNotEmpty) 'Site: ${p.siteName}',
-                                p.isSupplier ? 'Supplier' : 'Customer',
-                              ].join(' · '),
-                              'Advance ${rs(adv)} · Kharcha ${rs(kh)}',
-                            ].join('\n')),
+                                [
+                                  if (p.siteName.isNotEmpty)
+                                    'Site: ${p.siteName}',
+                                  p.isSupplier ? 'Supplier' : 'Customer',
+                                ].join(' · '),
+                                'Advance ${rs(adv)} · Kharcha ${rs(kh)}',
+                              ].join('\n'),
+                            ),
                             trailing: baqiChip(store.partyBaqi(p.id)),
                             onTap: () =>
                                 push(context, PartyDetailScreen(partyId: p.id)),
@@ -729,12 +813,15 @@ class PartyFormScreen extends StatefulWidget {
 }
 
 class _PartyFormScreenState extends State<PartyFormScreen> {
-  late final TextEditingController _name =
-      TextEditingController(text: widget.existing?.name ?? '');
-  late final TextEditingController _phone =
-      TextEditingController(text: widget.existing?.phone ?? '');
-  late final TextEditingController _site =
-      TextEditingController(text: widget.existing?.siteName ?? '');
+  late final TextEditingController _name = TextEditingController(
+    text: widget.existing?.name ?? '',
+  );
+  late final TextEditingController _phone = TextEditingController(
+    text: widget.existing?.phone ?? '',
+  );
+  late final TextEditingController _site = TextEditingController(
+    text: widget.existing?.siteName ?? '',
+  );
   late bool _isSupplier = widget.existing?.isSupplier ?? false;
 
   @override
@@ -752,13 +839,15 @@ class _PartyFormScreenState extends State<PartyFormScreen> {
       return;
     }
     if (widget.existing == null) {
-      await store.addParty(Party(
-        id: newId(),
-        name: name,
-        phone: _phone.text.trim(),
-        siteName: _site.text.trim(),
-        isSupplier: _isSupplier,
-      ));
+      await store.addParty(
+        Party(
+          id: newId(),
+          name: name,
+          phone: _phone.text.trim(),
+          siteName: _site.text.trim(),
+          isSupplier: _isSupplier,
+        ),
+      );
       if (mounted) toast(context, 'Party ban gayi');
     } else {
       final p = widget.existing!;
@@ -776,37 +865,50 @@ class _PartyFormScreenState extends State<PartyFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title:
-              Text(widget.existing == null ? 'Naya Customer' : 'Customer Edit Karo')),
+        title: Text(
+          widget.existing == null ? 'Naya Customer' : 'Customer Edit Karo',
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(14),
         children: [
           TextField(
             controller: _name,
             decoration: const InputDecoration(
-                labelText: 'Naam *', hintText: 'Masalan: Ahmed Raza'),
+              labelText: 'Naam *',
+              hintText: 'Masalan: Ahmed Raza',
+            ),
           ),
           const SizedBox(height: 10),
           TextField(
             controller: _phone,
             keyboardType: TextInputType.phone,
             decoration: const InputDecoration(
-                labelText: 'Phone (WhatsApp)', hintText: '03xx-xxxxxxx'),
+              labelText: 'Phone (WhatsApp)',
+              hintText: '03xx-xxxxxxx',
+            ),
           ),
           const SizedBox(height: 10),
           TextField(
             controller: _site,
             decoration: const InputDecoration(
-                labelText: 'Site / Jagah ka naam',
-                hintText: 'Masalan: Gulberg House'),
+              labelText: 'Site / Jagah ka naam',
+              hintText: 'Masalan: Gulberg House',
+            ),
           ),
           const SizedBox(height: 6),
           SegmentedButton<bool>(
             segments: const [
               ButtonSegment(
-                  value: false, label: Text('Customer'), icon: Icon(Icons.person)),
+                value: false,
+                label: Text('Customer'),
+                icon: Icon(Icons.person),
+              ),
               ButtonSegment(
-                  value: true, label: Text('Supplier'), icon: Icon(Icons.store)),
+                value: true,
+                label: Text('Supplier'),
+                icon: Icon(Icons.store),
+              ),
             ],
             selected: {_isSupplier},
             onSelectionChanged: (s) => setState(() => _isSupplier = s.first),
@@ -875,7 +977,9 @@ class PartyDetailScreen extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
-                  color: kNavy, borderRadius: BorderRadius.circular(10)),
+                color: kNavy,
+                borderRadius: BorderRadius.circular(10),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -884,32 +988,45 @@ class PartyDetailScreen extends StatelessWidget {
                     style: const TextStyle(color: Colors.white70, fontSize: 11),
                   ),
                   if (party.siteName.isNotEmpty)
-                    Text('Site: ${party.siteName}',
-                        style: const TextStyle(color: Colors.white)),
+                    Text(
+                      'Site: ${party.siteName}',
+                      style: const TextStyle(color: Colors.white),
+                    ),
                   if (party.phone.isNotEmpty)
-                    Text(party.phone,
-                        style: const TextStyle(color: Colors.white70)),
+                    Text(
+                      party.phone,
+                      style: const TextStyle(color: Colors.white70),
+                    ),
                   const SizedBox(height: 8),
                   Text(
                     baqi < 0
                         ? 'Aur lena hai: ${rs(-baqi)}'
                         : 'Baqi Paisa: ${rs(baqi)}',
                     style: const TextStyle(
-                        color: kAmber,
-                        fontSize: 21,
-                        fontWeight: FontWeight.w800),
+                      color: kAmber,
+                      fontSize: 21,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
                       Expanded(
-                        child: Text('Kul Advance: ${rs(advTotal)}',
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 12.5)),
-                      ),
-                      Text('Kul Kharcha: ${rs(khTotal)}',
+                        child: Text(
+                          'Kul Advance: ${rs(advTotal)}',
                           style: const TextStyle(
-                              color: Colors.white, fontSize: 12.5)),
+                            color: Colors.white,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        'Kul Kharcha: ${rs(khTotal)}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12.5,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -922,8 +1039,8 @@ class PartyDetailScreen extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(backgroundColor: kGreen),
-                      onPressed: () => push(
-                          context, AdvanceFormScreen(party: party)),
+                      onPressed: () =>
+                          push(context, AdvanceFormScreen(party: party)),
                       icon: const Icon(Icons.payments, size: 19),
                       label: const Text('Advance Liya'),
                     ),
@@ -932,8 +1049,8 @@ class PartyDetailScreen extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(backgroundColor: kRed),
-                      onPressed: () => push(
-                          context, KharchaFormScreen(party: party)),
+                      onPressed: () =>
+                          push(context, KharchaFormScreen(party: party)),
                       icon: const Icon(Icons.money_off, size: 19),
                       label: const Text('Kharcha Karo'),
                     ),
@@ -943,8 +1060,10 @@ class PartyDetailScreen extends StatelessWidget {
             ),
             const Padding(
               padding: EdgeInsets.fromLTRB(14, 14, 14, 2),
-              child: Text('Pura Hisaab',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+              child: Text(
+                'Pura Hisaab',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              ),
             ),
             if (display.isEmpty)
               const Padding(
@@ -958,18 +1077,22 @@ class PartyDetailScreen extends StatelessWidget {
               return Card(
                 child: ListTile(
                   dense: true,
-                  title: Text(entryLabel(e),
-                      style: const TextStyle(fontWeight: FontWeight.w700)),
+                  title: Text(
+                    entryLabel(e),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                   subtitle: Text(
-                      '${fmtDate(e.date)}${e.note.isNotEmpty ? ' · ${e.note}' : ''}\nBaqi: ${rs(baqiAfter)}'),
+                    '${fmtDate(e.date)}${e.note.isNotEmpty ? ' · ${e.note}' : ''}\nBaqi: ${rs(baqiAfter)}',
+                  ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         '${pos ? '+' : '-'}${rs(e.amount)}',
                         style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: pos ? kGreen : kRed),
+                          fontWeight: FontWeight.w800,
+                          color: pos ? kGreen : kRed,
+                        ),
                       ),
                       if (e.type == 'advance' || e.type == 'kharcha')
                         IconButton(
@@ -978,14 +1101,14 @@ class PartyDetailScreen extends StatelessWidget {
                           onPressed: () {
                             if (e.type == 'advance') {
                               push(
-                                  context,
-                                  AdvanceFormScreen(
-                                      party: party, existing: e));
+                                context,
+                                AdvanceFormScreen(party: party, existing: e),
+                              );
                             } else {
                               push(
-                                  context,
-                                  KharchaFormScreen(
-                                      party: party, existing: e));
+                                context,
+                                KharchaFormScreen(party: party, existing: e),
+                              );
                             }
                           },
                         ),
@@ -1015,14 +1138,17 @@ class PartyDetailScreen extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Customer delete karein?'),
         content: Text(
-            '${party.name} aur us ka saara hisaab delete ho jayega. Ye wapas nahi aayega.'),
+          '${party.name} aur us ka saara hisaab delete ho jayega. Ye wapas nahi aayega.',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Nahi')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Nahi'),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Delete', style: TextStyle(color: kRed))),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: kRed)),
+          ),
         ],
       ),
     );
@@ -1123,24 +1249,30 @@ class _AdvanceFormScreenState extends State<AdvanceFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: Text(widget.existing != null
+        title: Text(
+          widget.existing != null
               ? 'Advance Edit — ${widget.party.name}'
-              : 'Advance Liya — ${widget.party.name}')),
+              : 'Advance Liya — ${widget.party.name}',
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(14),
         children: [
           TextField(
             controller: _amount,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(
-                labelText: 'Raqam (Rs) *', hintText: 'Masalan: 50000'),
+              labelText: 'Raqam (Rs) *',
+              hintText: 'Masalan: 50000',
+            ),
           ),
           const SizedBox(height: 10),
           TextField(
             controller: _note,
             decoration: const InputDecoration(
-                labelText: 'Note', hintText: 'Masalan: Pehla advance'),
+              labelText: 'Note',
+              hintText: 'Masalan: Pehla advance',
+            ),
           ),
           const SizedBox(height: 10),
           ListTile(
@@ -1179,15 +1311,22 @@ class _AdvanceFormScreenState extends State<AdvanceFormScreen> {
 // ===========================================================================
 
 class KharchaFormScreen extends StatefulWidget {
-  final Party party;
+  /// Customer pehle se tay ho (customer detail / picker se aao) to ye hota
+  /// hai. Home se direct kharcha me null rehta hai — phir customer form ke
+  /// andar hi dropdown se chuna jata hai.
+  final Party? party;
 
   /// Karigar tab / detail se aao to karigar pehle se chuna hota hai.
   final Karigar? initialKarigar;
 
   /// Edit mode: mojooda kharcha entry badalni ho to ye pass hota hai.
   final LedgerEntry? existing;
-  const KharchaFormScreen(
-      {super.key, required this.party, this.initialKarigar, this.existing});
+  const KharchaFormScreen({
+    super.key,
+    this.party,
+    this.initialKarigar,
+    this.existing,
+  });
 
   @override
   State<KharchaFormScreen> createState() => _KharchaFormScreenState();
@@ -1202,10 +1341,15 @@ class _KharchaFormScreenState extends State<KharchaFormScreen> {
   String _category = 'Material'; // Material | Karigar | Custom
   String? _karigarId;
 
+  /// Direct mode (Home se, party preset nahi) me form ke andar chuna gaya
+  /// customer. Edit / preset mode me ye entry/party se pehle se bhara hota hai.
+  String? _partyId;
+
   @override
   void initState() {
     super.initState();
     final ex = widget.existing;
+    _partyId = ex?.partyId ?? widget.party?.id;
     if (ex != null) {
       // Edit mode: purani entry ki values pehle se bhari hui, aur cash
       // toggle asal halat se shuru (purani cash posting hai to ON).
@@ -1238,7 +1382,35 @@ class _KharchaFormScreenState extends State<KharchaFormScreen> {
     super.dispose();
   }
 
+  /// AppBar ke liye customer ka naam — preset party se, warna edit mode
+  /// me entry ke partyId se.
+  String get _partyName =>
+      widget.party?.name ??
+      (widget.existing != null
+          ? store.partyById(widget.existing!.partyId)?.name ?? ''
+          : '');
+
+  /// Direct mode ke dropdown ke liye naam ke hisaab se sorted customers.
+  List<Party> _sortedParties() =>
+      [...store.parties]
+        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
   Future<void> _save() async {
+    // Entry kis customer par lagegi: edit me entry ki apni party, preset
+    // mode me wohi party, direct mode me form me chuna gaya customer.
+    // Direct mode me customer na chuna ho to save ruk jata hai.
+    final String partyId;
+    final ex0 = widget.existing;
+    if (ex0 != null) {
+      partyId = ex0.partyId;
+    } else if (widget.party != null) {
+      partyId = widget.party!.id;
+    } else if (_partyId != null) {
+      partyId = _partyId!;
+    } else {
+      toast(context, 'Pehle customer chuno');
+      return;
+    }
     final amt = double.tryParse(_amount.text.trim()) ?? 0;
     if (amt <= 0) {
       toast(context, 'Sahi raqam likho');
@@ -1288,7 +1460,7 @@ class _KharchaFormScreenState extends State<KharchaFormScreen> {
     await store.addLedgerEntry(
       LedgerEntry(
         id: newId(),
-        partyId: widget.party.id,
+        partyId: partyId,
         type: 'kharcha',
         amount: amt,
         note: _note.text.trim(),
@@ -1308,46 +1480,86 @@ class _KharchaFormScreenState extends State<KharchaFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: Text(widget.existing != null
-              ? 'Kharcha Edit — ${widget.party.name}'
-              : 'Kharcha — ${widget.party.name}')),
+        title: Text(
+          widget.existing != null
+              ? 'Kharcha Edit — $_partyName'
+              : (widget.party != null
+                    ? 'Kharcha — $_partyName'
+                    : 'Kharcha Karo'),
+        ),
+      ),
       body: storeBuilder((context) {
         return ListView(
           padding: const EdgeInsets.all(14),
           children: [
+            // Direct mode (Home se, koi party preset nahi aur edit bhi
+            // nahi): customer form ke andar hi dropdown se chuna jata hai.
+            if (widget.existing == null && widget.party == null) ...[
+              if (store.parties.isEmpty)
+                const Text('Pehle Customers mein ja kar customer add karo')
+              else
+                DropdownButtonFormField<String>(
+                  initialValue: _partyId,
+                  decoration: const InputDecoration(labelText: 'Customer'),
+                  items: _sortedParties()
+                      .map(
+                        (p) => DropdownMenuItem<String>(
+                          value: p.id,
+                          child: Text(
+                            p.siteName.isNotEmpty
+                                ? '${p.name} — ${p.siteName}'
+                                : p.name,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (v) => setState(() => _partyId = v),
+                ),
+              const SizedBox(height: 12),
+            ],
             TextField(
               controller: _amount,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: const InputDecoration(
-                  labelText: 'Raqam (Rs) *', hintText: 'Masalan: 5000'),
+                labelText: 'Raqam (Rs) *',
+                hintText: 'Masalan: 5000',
+              ),
             ),
             const SizedBox(height: 12),
-            const Text('Kharcha kis par?',
-                style: TextStyle(fontWeight: FontWeight.w700)),
+            const Text(
+              'Kharcha kis par?',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
             const SizedBox(height: 6),
             SegmentedButton<String>(
               segments: const [
                 ButtonSegment(
-                    value: 'Material',
-                    label: Text('Material'),
-                    icon: Icon(Icons.layers)),
+                  value: 'Material',
+                  label: Text('Material'),
+                  icon: Icon(Icons.layers),
+                ),
                 ButtonSegment(
-                    value: 'Karigar',
-                    label: Text('Karigar'),
-                    icon: Icon(Icons.engineering)),
+                  value: 'Karigar',
+                  label: Text('Karigar'),
+                  icon: Icon(Icons.engineering),
+                ),
                 ButtonSegment(
-                    value: 'Custom',
-                    label: Text('Custom'),
-                    icon: Icon(Icons.edit_note)),
+                  value: 'Custom',
+                  label: Text('Custom'),
+                  icon: Icon(Icons.edit_note),
+                ),
               ],
               selected: {_category},
               onSelectionChanged: (s) => setState(() => _category = s.first),
             ),
             if (_category == 'Karigar') ...[
               const SizedBox(height: 12),
-              const Text('Karigar chuno',
-                  style: TextStyle(fontWeight: FontWeight.w700)),
+              const Text(
+                'Karigar chuno',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
               const SizedBox(height: 6),
               if (store.karigars.isEmpty)
                 const Text('Abhi koi karigar nahi hai — pehle naya jodo.'),
@@ -1355,11 +1567,13 @@ class _KharchaFormScreenState extends State<KharchaFormScreen> {
                 spacing: 8,
                 runSpacing: 4,
                 children: [
-                  ...store.karigars.map((k) => ChoiceChip(
-                        label: Text(k.name),
-                        selected: _karigarId == k.id,
-                        onSelected: (_) => setState(() => _karigarId = k.id),
-                      )),
+                  ...store.karigars.map(
+                    (k) => ChoiceChip(
+                      label: Text(k.name),
+                      selected: _karigarId == k.id,
+                      onSelected: (_) => setState(() => _karigarId = k.id),
+                    ),
+                  ),
                   ActionChip(
                     avatar: const Icon(Icons.add, size: 18),
                     label: const Text('Naya Karigar'),
@@ -1378,15 +1592,18 @@ class _KharchaFormScreenState extends State<KharchaFormScreen> {
               TextField(
                 controller: _custom,
                 decoration: const InputDecoration(
-                    labelText: 'Custom kharcha ka naam *',
-                    hintText: 'Masalan: Petrol, Khana, Gaari bhara'),
+                  labelText: 'Custom kharcha ka naam *',
+                  hintText: 'Masalan: Petrol, Khana, Gaari bhara',
+                ),
               ),
             ],
             const SizedBox(height: 10),
             TextField(
               controller: _note,
               decoration: const InputDecoration(
-                  labelText: 'Note', hintText: 'Masalan: Gypsum sheets'),
+                labelText: 'Note',
+                hintText: 'Masalan: Gypsum sheets',
+              ),
             ),
             const SizedBox(height: 10),
             ListTile(
@@ -1435,24 +1652,30 @@ Future<Karigar?> showQuickKarigarDialog(BuildContext context) async {
           TextField(
             controller: name,
             decoration: const InputDecoration(
-                labelText: 'Naam *', hintText: 'Masalan: Ustad Rafiq'),
+              labelText: 'Naam *',
+              hintText: 'Masalan: Ustad Rafiq',
+            ),
           ),
           const SizedBox(height: 10),
           TextField(
             controller: phone,
             keyboardType: TextInputType.phone,
             decoration: const InputDecoration(
-                labelText: 'Phone', hintText: '03xx-xxxxxxx'),
+              labelText: 'Phone',
+              hintText: '03xx-xxxxxxx',
+            ),
           ),
         ],
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel')),
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel'),
+        ),
         TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Jodo')),
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Jodo'),
+        ),
       ],
     ),
   );
@@ -1511,22 +1734,31 @@ class KarigarListScreen extends StatelessWidget {
                         child: Text(
                           k.name.isNotEmpty ? k.name[0].toUpperCase() : '?',
                           style: const TextStyle(
-                              color: kAmber, fontWeight: FontWeight.w800),
+                            color: kAmber,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
-                      title: Text(k.name,
-                          style: const TextStyle(fontWeight: FontWeight.w700)),
+                      title: Text(
+                        k.name,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
                       subtitle: Text(k.phone.isNotEmpty ? k.phone : 'Karigar'),
                       trailing: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text(rs(store.karigarTotalPaid(k.id)),
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w800)),
-                          const Text('Kul diya',
-                              style: TextStyle(
-                                  fontSize: 10, color: Colors.black54)),
+                          Text(
+                            rs(store.karigarTotalPaid(k.id)),
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          const Text(
+                            'Kul diya',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.black54,
+                            ),
+                          ),
                         ],
                       ),
                       onTap: () =>
@@ -1582,31 +1814,47 @@ class KarigarDetailScreen extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
-                  color: kNavy, borderRadius: BorderRadius.circular(10)),
+                color: kNavy,
+                borderRadius: BorderRadius.circular(10),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Karigar',
-                      style: TextStyle(color: Colors.white70, fontSize: 11)),
-                  Text(karigar.name,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700)),
+                  const Text(
+                    'Karigar',
+                    style: TextStyle(color: Colors.white70, fontSize: 11),
+                  ),
+                  Text(
+                    karigar.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   if (karigar.phone.isNotEmpty)
-                    Text(karigar.phone,
-                        style: const TextStyle(color: Colors.white70)),
+                    Text(
+                      karigar.phone,
+                      style: const TextStyle(color: Colors.white70),
+                    ),
                   if (karigar.note.isNotEmpty)
-                    Text(karigar.note,
-                        style: const TextStyle(color: Colors.white70)),
+                    Text(
+                      karigar.note,
+                      style: const TextStyle(color: Colors.white70),
+                    ),
                   const SizedBox(height: 8),
-                  const Text('Kul Diya',
-                      style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  Text(rs(total),
-                      style: const TextStyle(
-                          color: kAmber,
-                          fontSize: 21,
-                          fontWeight: FontWeight.w800)),
+                  const Text(
+                    'Kul Diya',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                  Text(
+                    rs(total),
+                    style: const TextStyle(
+                      color: kAmber,
+                      fontSize: 21,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1614,19 +1862,26 @@ class KarigarDetailScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: kAmber, foregroundColor: kNavy),
+                  backgroundColor: kAmber,
+                  foregroundColor: kNavy,
+                ),
                 onPressed: () => push(
-                    context,
-                    EntryPartyPickerScreen(
-                        kind: 'karigarKharcha', karigarId: karigar.id)),
+                  context,
+                  EntryPartyPickerScreen(
+                    kind: 'karigarKharcha',
+                    karigarId: karigar.id,
+                  ),
+                ),
                 icon: const Icon(Icons.payments, size: 19),
                 label: const Text('Payment Do'),
               ),
             ),
             const Padding(
               padding: EdgeInsets.fromLTRB(14, 14, 14, 2),
-              child: Text('Payment History',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+              child: Text(
+                'Payment History',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              ),
             ),
             if (entries.isEmpty)
               const Padding(
@@ -1638,19 +1893,25 @@ class KarigarDetailScreen extends StatelessWidget {
               return Card(
                 child: ListTile(
                   dense: true,
-                  title: Text(p?.name ?? 'Purana customer',
-                      style: const TextStyle(fontWeight: FontWeight.w700)),
-                  subtitle: Text([
-                    if (p != null && p.siteName.isNotEmpty)
-                      'Site: ${p.siteName}',
-                    fmtDate(e.date),
-                    if (e.note.isNotEmpty) e.note,
-                  ].join(' · ')),
+                  title: Text(
+                    p?.name ?? 'Purana customer',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: Text(
+                    [
+                      if (p != null && p.siteName.isNotEmpty)
+                        'Site: ${p.siteName}',
+                      fmtDate(e.date),
+                      if (e.note.isNotEmpty) e.note,
+                    ].join(' · '),
+                  ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(rs(e.amount),
-                          style: const TextStyle(fontWeight: FontWeight.w800)),
+                      Text(
+                        rs(e.amount),
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
                       if (p != null)
                         IconButton(
                           icon: const Icon(Icons.edit_outlined, size: 19),
@@ -1658,8 +1919,10 @@ class KarigarDetailScreen extends StatelessWidget {
                           onPressed: () {
                             final pp = store.partyById(e.partyId);
                             if (pp != null) {
-                              push(context,
-                                  KharchaFormScreen(party: pp, existing: e));
+                              push(
+                                context,
+                                KharchaFormScreen(party: pp, existing: e),
+                              );
                             }
                           },
                         ),
@@ -1675,20 +1938,25 @@ class KarigarDetailScreen extends StatelessWidget {
   }
 
   Future<void> _confirmDeleteKarigar(
-      BuildContext context, Karigar karigar) async {
+    BuildContext context,
+    Karigar karigar,
+  ) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Karigar delete karein?'),
         content: Text(
-            '${karigar.name} list se hat jayega. Us ki purani payment entries customers ke hisaab mein waisi hi rahengi.'),
+          '${karigar.name} list se hat jayega. Us ki purani payment entries customers ke hisaab mein waisi hi rahengi.',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Nahi')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Nahi'),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Delete', style: TextStyle(color: kRed))),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: kRed)),
+          ),
         ],
       ),
     );
@@ -1712,12 +1980,15 @@ class KarigarFormScreen extends StatefulWidget {
 }
 
 class _KarigarFormScreenState extends State<KarigarFormScreen> {
-  late final TextEditingController _name =
-      TextEditingController(text: widget.existing?.name ?? '');
-  late final TextEditingController _phone =
-      TextEditingController(text: widget.existing?.phone ?? '');
-  late final TextEditingController _note =
-      TextEditingController(text: widget.existing?.note ?? '');
+  late final TextEditingController _name = TextEditingController(
+    text: widget.existing?.name ?? '',
+  );
+  late final TextEditingController _phone = TextEditingController(
+    text: widget.existing?.phone ?? '',
+  );
+  late final TextEditingController _note = TextEditingController(
+    text: widget.existing?.note ?? '',
+  );
 
   @override
   void dispose() {
@@ -1734,13 +2005,15 @@ class _KarigarFormScreenState extends State<KarigarFormScreen> {
       return;
     }
     if (widget.existing == null) {
-      await store.addKarigar(Karigar(
-        id: newId(),
-        name: name,
-        phone: _phone.text.trim(),
-        note: _note.text.trim(),
-        createdAt: DateTime.now(),
-      ));
+      await store.addKarigar(
+        Karigar(
+          id: newId(),
+          name: name,
+          phone: _phone.text.trim(),
+          note: _note.text.trim(),
+          createdAt: DateTime.now(),
+        ),
+      );
       if (mounted) toast(context, 'Karigar ban gaya');
     } else {
       final k = widget.existing!;
@@ -1757,28 +2030,36 @@ class _KarigarFormScreenState extends State<KarigarFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: Text(
-              widget.existing == null ? 'Naya Karigar' : 'Karigar Edit Karo')),
+        title: Text(
+          widget.existing == null ? 'Naya Karigar' : 'Karigar Edit Karo',
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(14),
         children: [
           TextField(
             controller: _name,
             decoration: const InputDecoration(
-                labelText: 'Naam *', hintText: 'Masalan: Ustad Rafiq'),
+              labelText: 'Naam *',
+              hintText: 'Masalan: Ustad Rafiq',
+            ),
           ),
           const SizedBox(height: 10),
           TextField(
             controller: _phone,
             keyboardType: TextInputType.phone,
             decoration: const InputDecoration(
-                labelText: 'Phone', hintText: '03xx-xxxxxxx'),
+              labelText: 'Phone',
+              hintText: '03xx-xxxxxxx',
+            ),
           ),
           const SizedBox(height: 10),
           TextField(
             controller: _note,
             decoration: const InputDecoration(
-                labelText: 'Note', hintText: 'Masalan: Ceiling wala karigar'),
+              labelText: 'Note',
+              hintText: 'Masalan: Ceiling wala karigar',
+            ),
           ),
           const SizedBox(height: 18),
           ElevatedButton.icon(
@@ -1804,8 +2085,9 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  late final TextEditingController _biz =
-      TextEditingController(text: store.businessName);
+  late final TextEditingController _biz = TextEditingController(
+    text: store.businessName,
+  );
   final _importCtrl = TextEditingController();
 
   @override
@@ -1819,8 +2101,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final data = store.exportJson();
     await Clipboard.setData(ClipboardData(text: data));
     if (mounted) {
-      toast(context,
-          'Backup copy ho gaya — isay kahin safe jagah (WhatsApp/Notes) save kar lo');
+      toast(
+        context,
+        'Backup copy ho gaya — isay kahin safe jagah (WhatsApp/Notes) save kar lo',
+      );
     }
   }
 
@@ -1835,22 +2119,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Data restore karein?'),
         content: const Text(
-            'Maujooda saara data is backup se badal jayega. Yaqeen hai?'),
+          'Maujooda saara data is backup se badal jayega. Yaqeen hai?',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Nahi')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Nahi'),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Restore Karo')),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Restore Karo'),
+          ),
         ],
       ),
     );
     if (ok != true) return;
     final done = await store.importJson(raw);
     if (mounted) {
-      toast(context,
-          done ? 'Data restore ho gaya' : 'Ye backup text sahi nahi hai');
+      toast(
+        context,
+        done ? 'Data restore ho gaya' : 'Ye backup text sahi nahi hai',
+      );
       if (done) _importCtrl.clear();
     }
   }
@@ -1863,8 +2152,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         body: ListView(
           padding: const EdgeInsets.all(14),
           children: [
-            const Text('Business ka naam',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+            const Text(
+              'Business ka naam',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+            ),
             const SizedBox(height: 6),
             const Text(
               'Ye naam Home screen par dikhega.',
@@ -1876,8 +2167,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Expanded(
                   child: TextField(
                     controller: _biz,
-                    decoration:
-                        const InputDecoration(labelText: 'Business Name'),
+                    decoration: const InputDecoration(
+                      labelText: 'Business Name',
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -1891,8 +2183,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             const Divider(height: 30),
-            const Text('Backup (Data mehfooz rakho)',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+            const Text(
+              'Backup (Data mehfooz rakho)',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+            ),
             const SizedBox(height: 6),
             const Text(
               'Backup = poora data ek text ki shakal me. Copy karke kahin safe rakh lo. Phone badlo ya app dobara lagao to yahi text paste karke saara data wapas aa jayega.',
@@ -1904,11 +2198,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               icon: const Icon(Icons.copy),
               label: const Text('Backup Copy Karo'),
               style: ElevatedButton.styleFrom(
-                  backgroundColor: kAmber, foregroundColor: kNavy),
+                backgroundColor: kAmber,
+                foregroundColor: kNavy,
+              ),
             ),
             const SizedBox(height: 18),
-            const Text('Restore (Backup wapas lao)',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+            const Text(
+              'Restore (Backup wapas lao)',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: _importCtrl,
@@ -1927,8 +2225,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 24),
             const Center(
               child: Text(
-                  'Khata Book — koi subscription nahi, data aap ke phone par',
-                  style: TextStyle(fontSize: 11.5, color: Colors.black45)),
+                'Khata Book — koi subscription nahi, data aap ke phone par',
+                style: TextStyle(fontSize: 11.5, color: Colors.black45),
+              ),
             ),
           ],
         ),
