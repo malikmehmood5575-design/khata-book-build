@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'models.dart';
 import 'store.dart';
 import 'helpers.dart';
+import 'pdf_gen.dart';
 import 'theme.dart';
 
 AppStore get store => AppStore.instance;
@@ -403,6 +404,40 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => printTotalKhata(store),
+                  icon: const Icon(Icons.print, size: 19),
+                  label: const Text('Total Khata Print Karo'),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kAmber,
+                    foregroundColor: kNavy,
+                  ),
+                  onPressed: () async {
+                    try {
+                      await shareTotalKhata(store);
+                    } catch (_) {
+                      if (context.mounted) {
+                        toast(context, 'PDF share nahi ho saka');
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.share, size: 19),
+                  label: const Text('Total Khata PDF Share Karo'),
+                ),
               ),
             ),
             const Padding(
@@ -1056,6 +1091,40 @@ class PartyDetailScreen extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => printCustomerKhata(store, party),
+                  icon: const Icon(Icons.print, size: 19),
+                  label: const Text('Khata Print Karo'),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kAmber,
+                    foregroundColor: kNavy,
+                  ),
+                  onPressed: () async {
+                    try {
+                      await shareCustomerKhata(store, party);
+                    } catch (_) {
+                      if (context.mounted) {
+                        toast(context, 'PDF share nahi ho saka');
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.share, size: 19),
+                  label: const Text('PDF Share Karo'),
+                ),
               ),
             ),
             const Padding(
