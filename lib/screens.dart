@@ -42,7 +42,9 @@ void push(BuildContext context, Widget screen) {
 }
 
 /// Entry ki woh label jo har jagah dikhti hai (Home activity, customer
-/// history). Kharcha par category bhi sath: Material / Karigar / Doosra.
+/// history). Kharcha par category bhi sath: Material / Karigar / Custom
+/// (Custom matlab kharchaLabel me user ka apna likha naam; purane
+/// 'Doosra' wale labels bhi waisay hi dikhte rehte hain).
 String entryLabel(LedgerEntry e) {
   switch (e.type) {
     case 'advance':
@@ -59,6 +61,11 @@ String entryLabel(LedgerEntry e) {
       return e.typeLabel;
   }
 }
+
+/// Edit form me raqam field ki shuruati value — 10000.0 ki jagah '10000'
+/// taake field me saaf number aye aur parse bhi ho jaye.
+String amtFieldText(double v) =>
+    v == v.truncateToDouble() ? v.toInt().toString() : v.toString();
 
 /// Customer ke baqi paisay wala chip: sabz = paisa hamaray paas baqi hai,
 /// laal = advance khatam, aur paisa lena hai.
@@ -964,6 +971,24 @@ class PartyDetailScreen extends StatelessWidget {
                             fontWeight: FontWeight.w800,
                             color: pos ? kGreen : kRed),
                       ),
+                      if (e.type == 'advance' || e.type == 'kharcha')
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: 19),
+                          tooltip: 'Edit',
+                          onPressed: () {
+                            if (e.type == 'advance') {
+                              push(
+                                  context,
+                                  AdvanceFormScreen(
+                                      party: party, existing: e));
+                            } else {
+                              push(
+                                  context,
+                                  KharchaFormScreen(
+                                      party: party, existing: e));
+                            }
+                          },
+                        ),
                       IconButton(
                         icon: const Icon(Icons.delete_outline, size: 19),
                         onPressed: () async {
@@ -1014,7 +1039,10 @@ class PartyDetailScreen extends StatelessWidget {
 
 class AdvanceFormScreen extends StatefulWidget {
   final Party party;
-  const AdvanceFormScreen({super.key, required this.party});
+
+  /// Edit mode: mojooda advance entry badalni ho to ye pass hota hai.
+  final LedgerEntry? existing;
+  const AdvanceFormScreen({super.key, required this.party, this.existing});
 
   @override
   State<AdvanceFormScreen> createState() => _AdvanceFormScreenState();
@@ -1027,6 +1055,20 @@ class _AdvanceFormScreenState extends State<AdvanceFormScreen> {
   bool _alsoCash = true;
 
   @override
+  void initState() {
+    super.initState();
+    final ex = widget.existing;
+    if (ex != null) {
+      // Edit mode: purani entry ki values pehle se bhari hui, aur cash
+      // toggle asal halat se shuru (purani cash posting hai to ON).
+      _amount.text = amtFieldText(ex.amount);
+      _note.text = ex.note;
+      _date = ex.date;
+      _alsoCash = store.hasLinkedCashEntry(ex);
+    }
+  }
+
+  @override
   void dispose() {
     _amount.dispose();
     _note.dispose();
@@ -1037,6 +1079,27 @@ class _AdvanceFormScreenState extends State<AdvanceFormScreen> {
     final amt = double.tryParse(_amount.text.trim()) ?? 0;
     if (amt <= 0) {
       toast(context, 'Sahi raqam likho');
+      return;
+    }
+    final ex = widget.existing;
+    if (ex != null) {
+      // Edit: wohi id, nayi values; store purani cash posting hata kar
+      // toggle ke hisaab se nayi kar deta hai.
+      await store.updateLedgerEntry(
+        LedgerEntry(
+          id: ex.id,
+          partyId: ex.partyId,
+          type: 'advance',
+          amount: amt,
+          note: _note.text.trim(),
+          date: _date,
+        ),
+        postCash: _alsoCash,
+      );
+      if (mounted) {
+        toast(context, 'Advance edit ho gaya');
+        Navigator.pop(context);
+      }
       return;
     }
     await store.addLedgerEntry(
@@ -1059,7 +1122,10 @@ class _AdvanceFormScreenState extends State<AdvanceFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Advance Liya — ${widget.party.name}')),
+      appBar: AppBar(
+          title: Text(widget.existing != null
+              ? 'Advance Edit — ${widget.party.name}'
+              : 'Advance Liya — ${widget.party.name}')),
       body: ListView(
         padding: const EdgeInsets.all(14),
         children: [
@@ -1109,7 +1175,7 @@ class _AdvanceFormScreenState extends State<AdvanceFormScreen> {
 
 // ===========================================================================
 // Kharcha form — customer ke advance mein se kharcha
-// Category: Material | Karigar | Doosra
+// Category: Material | Karigar | Custom
 // ===========================================================================
 
 class KharchaFormScreen extends StatefulWidget {
@@ -1117,7 +1183,11 @@ class KharchaFormScreen extends StatefulWidget {
 
   /// Karigar tab / detail se aao to karigar pehle se chuna hota hai.
   final Karigar? initialKarigar;
-  const KharchaFormScreen({super.key, required this.party, this.initialKarigar});
+
+  /// Edit mode: mojooda kharcha entry badalni ho to ye pass hota hai.
+  final LedgerEntry? existing;
+  const KharchaFormScreen(
+      {super.key, required this.party, this.initialKarigar, this.existing});
 
   @override
   State<KharchaFormScreen> createState() => _KharchaFormScreenState();
@@ -1126,16 +1196,35 @@ class KharchaFormScreen extends StatefulWidget {
 class _KharchaFormScreenState extends State<KharchaFormScreen> {
   final _amount = TextEditingController();
   final _note = TextEditingController();
-  final _doosra = TextEditingController();
+  final _custom = TextEditingController();
   DateTime _date = DateTime.now();
   bool _alsoCash = true;
-  String _category = 'Material'; // Material | Karigar | Doosra
+  String _category = 'Material'; // Material | Karigar | Custom
   String? _karigarId;
 
   @override
   void initState() {
     super.initState();
-    if (widget.initialKarigar != null) {
+    final ex = widget.existing;
+    if (ex != null) {
+      // Edit mode: purani entry ki values pehle se bhari hui, aur cash
+      // toggle asal halat se shuru (purani cash posting hai to ON).
+      _amount.text = amtFieldText(ex.amount);
+      _note.text = ex.note;
+      _date = ex.date;
+      _alsoCash = store.hasLinkedCashEntry(ex);
+      if (ex.karigarId != null) {
+        _category = 'Karigar';
+        _karigarId = ex.karigarId;
+      } else if (ex.kharchaLabel == 'Material') {
+        _category = 'Material';
+      } else {
+        // 'Doosra' samet har doosra label Custom me khulta hai — purana
+        // naam field me pehle se likha hua ata hai.
+        _category = 'Custom';
+        _custom.text = ex.kharchaLabel ?? '';
+      }
+    } else if (widget.initialKarigar != null) {
       _category = 'Karigar';
       _karigarId = widget.initialKarigar!.id;
     }
@@ -1145,7 +1234,7 @@ class _KharchaFormScreenState extends State<KharchaFormScreen> {
   void dispose() {
     _amount.dispose();
     _note.dispose();
-    _doosra.dispose();
+    _custom.dispose();
     super.dispose();
   }
 
@@ -1159,6 +1248,10 @@ class _KharchaFormScreenState extends State<KharchaFormScreen> {
       toast(context, 'Pehle karigar chuno ya naya karigar jodo');
       return;
     }
+    if (_category == 'Custom' && _custom.text.trim().isEmpty) {
+      toast(context, 'Custom kharcha ka naam likho');
+      return;
+    }
     String? kharchaLabel;
     String? karigarId;
     if (_category == 'Karigar') {
@@ -1166,8 +1259,31 @@ class _KharchaFormScreenState extends State<KharchaFormScreen> {
     } else if (_category == 'Material') {
       kharchaLabel = 'Material';
     } else {
-      final t = _doosra.text.trim();
-      kharchaLabel = t.isEmpty ? 'Doosra' : t;
+      // Custom: user ka apna likha naam hi label hai.
+      kharchaLabel = _custom.text.trim();
+    }
+    final ex = widget.existing;
+    if (ex != null) {
+      // Edit: wohi id, nayi values; store purani cash posting hata kar
+      // toggle ke hisaab se nayi kar deta hai.
+      await store.updateLedgerEntry(
+        LedgerEntry(
+          id: ex.id,
+          partyId: ex.partyId,
+          type: 'kharcha',
+          amount: amt,
+          note: _note.text.trim(),
+          date: _date,
+          karigarId: karigarId,
+          kharchaLabel: kharchaLabel,
+        ),
+        postCash: _alsoCash,
+      );
+      if (mounted) {
+        toast(context, 'Kharcha edit ho gaya');
+        Navigator.pop(context);
+      }
+      return;
     }
     await store.addLedgerEntry(
       LedgerEntry(
@@ -1191,7 +1307,10 @@ class _KharchaFormScreenState extends State<KharchaFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Kharcha — ${widget.party.name}')),
+      appBar: AppBar(
+          title: Text(widget.existing != null
+              ? 'Kharcha Edit — ${widget.party.name}'
+              : 'Kharcha — ${widget.party.name}')),
       body: storeBuilder((context) {
         return ListView(
           padding: const EdgeInsets.all(14),
@@ -1218,9 +1337,9 @@ class _KharchaFormScreenState extends State<KharchaFormScreen> {
                     label: Text('Karigar'),
                     icon: Icon(Icons.engineering)),
                 ButtonSegment(
-                    value: 'Doosra',
-                    label: Text('Doosra'),
-                    icon: Icon(Icons.more_horiz)),
+                    value: 'Custom',
+                    label: Text('Custom'),
+                    icon: Icon(Icons.edit_note)),
               ],
               selected: {_category},
               onSelectionChanged: (s) => setState(() => _category = s.first),
@@ -1254,13 +1373,13 @@ class _KharchaFormScreenState extends State<KharchaFormScreen> {
                 ],
               ),
             ],
-            if (_category == 'Doosra') ...[
+            if (_category == 'Custom') ...[
               const SizedBox(height: 12),
               TextField(
-                controller: _doosra,
+                controller: _custom,
                 decoration: const InputDecoration(
-                    labelText: 'Kharcha kis cheez par?',
-                    hintText: 'Masalan: Khana, Transport'),
+                    labelText: 'Custom kharcha ka naam *',
+                    hintText: 'Masalan: Petrol, Khana, Gaari bhara'),
               ),
             ],
             const SizedBox(height: 10),
@@ -1527,8 +1646,25 @@ class KarigarDetailScreen extends StatelessWidget {
                     fmtDate(e.date),
                     if (e.note.isNotEmpty) e.note,
                   ].join(' · ')),
-                  trailing: Text(rs(e.amount),
-                      style: const TextStyle(fontWeight: FontWeight.w800)),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(rs(e.amount),
+                          style: const TextStyle(fontWeight: FontWeight.w800)),
+                      if (p != null)
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: 19),
+                          tooltip: 'Edit',
+                          onPressed: () {
+                            final pp = store.partyById(e.partyId);
+                            if (pp != null) {
+                              push(context,
+                                  KharchaFormScreen(party: pp, existing: e));
+                            }
+                          },
+                        ),
+                    ],
+                  ),
                 ),
               );
             }),

@@ -235,38 +235,72 @@ class AppStore extends ChangeNotifier {
     // NOTE: v1.2 me kharcha ko CashBook se bahar rakha gaya tha; v1.4 me
     // client ke advance model ki wazahat ke baad wo rule KHATAM hai —
     // kharcha bhi galle se hi kata jata hai (toggle ON ho to).
-    final dir = _cashDirection(e.type);
-    if (alsoCash && dir != null) {
-      cashbook.add(CashEntry(
-        id: newId(),
-        isIn: dir,
-        amount: e.amount,
-        note: _cashNoteFor(e),
-        date: e.date,
-        partyId: e.partyId,
-      ));
-    }
+    if (alsoCash) _postCashEntry(e);
     await save();
+  }
+
+  /// Ledger entry se linked CashBook entry ki pehchaan — partyId + date +
+  /// raqam + simt + note. Posting, delete-cascade aur edit teeno yahi
+  /// istemal karte hain.
+  int _linkedCashIndex(LedgerEntry e) {
+    final dir = _cashDirection(e.type);
+    if (dir == null) return -1;
+    final note = _cashNoteFor(e);
+    return cashbook.indexWhere((c) =>
+        c.partyId == e.partyId &&
+        c.isIn == dir &&
+        c.amount == e.amount &&
+        c.date == e.date &&
+        c.note == note);
+  }
+
+  /// Is entry ki cash posting CashBook me mojood hai ya nahi (edit form
+  /// ka cash toggle isi hisaab se shuru hota hai).
+  bool hasLinkedCashEntry(LedgerEntry e) => _linkedCashIndex(e) >= 0;
+
+  bool _removeLinkedCashEntry(LedgerEntry e) {
+    final idx = _linkedCashIndex(e);
+    if (idx < 0) return false;
+    cashbook.removeAt(idx);
+    return true;
+  }
+
+  void _postCashEntry(LedgerEntry e) {
+    final dir = _cashDirection(e.type);
+    if (dir == null) return;
+    cashbook.add(CashEntry(
+      id: newId(),
+      isIn: dir,
+      amount: e.amount,
+      note: _cashNoteFor(e),
+      date: e.date,
+      partyId: e.partyId,
+    ));
   }
 
   Future<void> deleteLedgerEntry(String id) async {
     final e = ledger.where((x) => x.id == id).firstOrNull;
     if (e != null) {
       // Linked CashBook entry bhi sath delete ho — jo entry add par cash
-      // me darj hui thi (partyId + date + raqam + simt + note se pehchan).
-      final dir = _cashDirection(e.type);
-      if (dir != null) {
-        final note = _cashNoteFor(e);
-        final idx = cashbook.indexWhere((c) =>
-            c.partyId == e.partyId &&
-            c.isIn == dir &&
-            c.amount == e.amount &&
-            c.date == e.date &&
-            c.note == note);
-        if (idx >= 0) cashbook.removeAt(idx);
-      }
+      // me darj hui thi.
+      _removeLinkedCashEntry(e);
     }
     ledger.removeWhere((x) => x.id == id);
+    await save();
+  }
+
+  /// Entry edit karna (v1.5): purani entry (usi id par) [updated] se badal
+  /// jati hai. Cash ka hisaab bhi durust rehta hai — pehle purani linked
+  /// cash entry hat ti hai, phir [postCash] ON ho to nayi entry ki cash
+  /// posting dobara ho jati hai. Baqi/cash totals getters se khud recalc
+  /// ho jate hain.
+  Future<void> updateLedgerEntry(LedgerEntry updated,
+      {required bool postCash}) async {
+    final idx = ledger.indexWhere((x) => x.id == updated.id);
+    if (idx < 0) return;
+    _removeLinkedCashEntry(ledger[idx]);
+    ledger[idx] = updated;
+    if (postCash) _postCashEntry(updated);
     await save();
   }
 
