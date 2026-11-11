@@ -185,6 +185,12 @@ class AppStore extends ChangeNotifier {
     return t;
   }
 
+  /// Kul remaining — kul advance me se kul kharcha (customer + apna dono)
+  /// minus karke jo asal baqi bachta hai. Home hero ki bari rakam
+  /// (v1.8.1 — Malik: "uper total mai remaining amount aani chahiyee").
+  /// Ye totalBaqi se mukhtalif hai: us me apna kharcha nahi kat ta.
+  double get totalRemaining => totalAdvance - totalKharcha;
+
   // -------------------------------------------------------------------------
   // v1.8 Apna Kharcha — partyId NULL wali kharcha entries (Home wale
   // "Kharcha Karo" se banti hain; kisi customer ke baqi par asar nahi,

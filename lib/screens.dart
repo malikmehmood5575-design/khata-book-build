@@ -293,11 +293,11 @@ class HomeScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Baqi Paisa — sab customers ka',
+                    'Baqi Paisa — Remaining',
                     style: TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                   Text(
-                    rs(store.totalBaqi),
+                    rs(store.totalRemaining),
                     style: const TextStyle(
                       color: kAmber,
                       fontSize: 26,
@@ -318,6 +318,15 @@ class HomeScreen extends StatelessWidget {
                         style: const TextStyle(color: Colors.white),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Customers ka baqi: ${rs(store.totalBaqi)}',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
