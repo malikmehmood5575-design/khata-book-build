@@ -64,6 +64,18 @@ String entryLabel(LedgerEntry e) {
   }
 }
 
+/// Kharcha ki category ka chhota naam — Apna Kharcha wali liston ke liye:
+/// 'Karigar: {naam}' / label (Material ya Custom naam) / sirf 'Kharcha'.
+String kharchaCategoryText(LedgerEntry e) {
+  if (e.karigarId != null) {
+    final k = store.karigarById(e.karigarId!);
+    return 'Karigar: ${k?.name ?? 'Karigar'}';
+  }
+  final lbl = e.kharchaLabel;
+  if (lbl != null && lbl.isNotEmpty) return lbl;
+  return 'Kharcha';
+}
+
 /// Edit form me raqam field ki shuruati value — 10000.0 ki jagah '10000'
 /// taake field me saaf number aye aur parse bhi ho jaye.
 String amtFieldText(double v) =>
@@ -191,7 +203,7 @@ void _showQuickAdd(BuildContext context) {
           ListTile(
             leading: const Icon(Icons.money_off, color: kRed),
             title: const Text('Kharcha Karo'),
-            subtitle: const Text('Customer ke advance mein se kharcha'),
+            subtitle: const Text('Apna kharcha — category ke hisaab se'),
             onTap: () {
               Navigator.pop(ctx);
               push(context, const KharchaFormScreen());
@@ -440,6 +452,30 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+              child: Card(
+                child: ListTile(
+                  leading: const Icon(Icons.receipt_long, color: kRed),
+                  title: const Text(
+                    'Apna Kharcha',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: const Text('Category ke hisaab se kul kharcha'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        rs(store.generalKharchaTotal),
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                      const Icon(Icons.chevron_right, size: 20),
+                    ],
+                  ),
+                  onTap: () => push(context, const ApnaKharchaScreen()),
+                ),
+              ),
+            ),
             const Padding(
               padding: EdgeInsets.fromLTRB(14, 14, 14, 2),
               child: Text(
@@ -457,10 +493,17 @@ class HomeScreen extends StatelessWidget {
             ...recent.take(10).map((e) {
               final p = store.partyById(e.partyId);
               final pos = e.baqiEffect >= 0;
+              // Apna kharcha (partyId null) ki row tap karne se wohi entry
+              // edit ke liye khul jati hai.
+              final isApna = e.partyId == null && e.type == 'kharcha';
               return Card(
                 child: ListTile(
                   dense: true,
-                  title: Text('${p?.name ?? ''} — ${entryLabel(e)}'),
+                  title: Text(
+                    p != null
+                        ? '${p.name} — ${entryLabel(e)}'
+                        : 'Apna Kharcha — ${kharchaCategoryText(e)}',
+                  ),
                   subtitle: Text(
                     '${fmtDate(e.date)}${e.note.isNotEmpty ? ' · ${e.note}' : ''}',
                   ),
@@ -470,6 +513,147 @@ class HomeScreen extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                       color: pos ? kGreen : kRed,
                     ),
+                  ),
+                  onTap: isApna
+                      ? () => push(context, KharchaFormScreen(existing: e))
+                      : null,
+                ),
+              );
+            }),
+          ],
+        ),
+      );
+    });
+  }
+}
+
+// ===========================================================================
+// Apna Kharcha (v1.8) — Home wale "Kharcha Karo" se bane hue general
+// kharche: kisi customer se taluq nahi, category ke hisaab se kul + saari
+// entries (edit / delete yahin se).
+// ===========================================================================
+
+class ApnaKharchaScreen extends StatelessWidget {
+  const ApnaKharchaScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return storeBuilder((context) {
+      final entries = store.generalKharchaEntries;
+      final byCat = store.generalKharchaByCategory();
+      final catNames = byCat.keys.toList()
+        ..sort((a, b) => (byCat[b] ?? 0).compareTo(byCat[a] ?? 0));
+      return Scaffold(
+        appBar: AppBar(title: const Text('Apna Kharcha')),
+        body: ListView(
+          padding: const EdgeInsets.only(top: 8, bottom: 24),
+          children: [
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                color: kNavy,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Kul Apna Kharcha',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                  Text(
+                    rs(store.generalKharchaTotal),
+                    style: const TextStyle(
+                      color: kAmber,
+                      fontSize: 23,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Ye kharcha kisi customer ke hisaab mein nahi jata — sirf galle se minus hota hai.',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            if (catNames.isNotEmpty) ...[
+              const Padding(
+                padding: EdgeInsets.fromLTRB(14, 14, 14, 2),
+                child: Text(
+                  'Category ke hisaab se',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                ),
+              ),
+              ...catNames.map(
+                (c) => Card(
+                  child: ListTile(
+                    dense: true,
+                    title: Text(
+                      c,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    trailing: Text(
+                      rs(byCat[c] ?? 0),
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            const Padding(
+              padding: EdgeInsets.fromLTRB(14, 14, 14, 2),
+              child: Text(
+                'Saara Apna Kharcha',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              ),
+            ),
+            if (entries.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(14),
+                child: Text(
+                  'Abhi koi apna kharcha nahi. Home se "Kharcha Karo" dabao — customer nahi chahiye.',
+                ),
+              ),
+            ...entries.map((e) {
+              return Card(
+                child: ListTile(
+                  dense: true,
+                  title: Text(
+                    kharchaCategoryText(e),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: Text(
+                    '${fmtDate(e.date)}${e.note.isNotEmpty ? ' · ${e.note}' : ''}',
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '-${rs(e.amount)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: kRed,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined, size: 19),
+                        tooltip: 'Edit',
+                        onPressed: () =>
+                            push(context, KharchaFormScreen(existing: e)),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 19),
+                        tooltip: 'Delete',
+                        onPressed: () async {
+                          await store.deleteLedgerEntry(e.id);
+                          if (context.mounted) {
+                            toast(context, 'Entry delete ho gayi');
+                          }
+                        },
+                      ),
+                    ],
                   ),
                 ),
               );
@@ -1375,14 +1559,17 @@ class _AdvanceFormScreenState extends State<AdvanceFormScreen> {
 }
 
 // ===========================================================================
-// Kharcha form — customer ke advance mein se kharcha
-// Category: Material | Karigar | Custom
+// Kharcha form — Category: Material | Karigar | Custom
+// Do tareeqay: (1) Home se direct = APNA kharcha (partyId null, koi
+// customer nahi — v1.8); (2) customer detail se party preset = us customer
+// ke advance mein se kharcha.
 // ===========================================================================
 
 class KharchaFormScreen extends StatefulWidget {
   /// Customer pehle se tay ho (customer detail / picker se aao) to ye hota
-  /// hai. Home se direct kharcha me null rehta hai — phir customer form ke
-  /// andar hi dropdown se chuna jata hai.
+  /// hai. Home se direct kharcha me null rehta hai — aur v1.8 se form me
+  /// customer CHUNNA hi nahi parta: entry apna kharcha ban kar save hoti
+  /// hai (partyId null).
   final Party? party;
 
   /// Karigar tab / detail se aao to karigar pehle se chuna hota hai.
@@ -1410,15 +1597,10 @@ class _KharchaFormScreenState extends State<KharchaFormScreen> {
   String _category = 'Material'; // Material | Karigar | Custom
   String? _karigarId;
 
-  /// Direct mode (Home se, party preset nahi) me form ke andar chuna gaya
-  /// customer. Edit / preset mode me ye entry/party se pehle se bhara hota hai.
-  String? _partyId;
-
   @override
   void initState() {
     super.initState();
     final ex = widget.existing;
-    _partyId = ex?.partyId ?? widget.party?.id;
     if (ex != null) {
       // Edit mode: purani entry ki values pehle se bhari hui, aur cash
       // toggle asal halat se shuru (purani cash posting hai to ON).
@@ -1451,34 +1633,28 @@ class _KharchaFormScreenState extends State<KharchaFormScreen> {
     super.dispose();
   }
 
-  /// AppBar ke liye customer ka naam — preset party se, warna edit mode
-  /// me entry ke partyId se.
+  /// AppBar ke liye naam — preset party se, warna edit mode me entry ke
+  /// partyId se; apna kharcha (partyId null) par 'Apna Kharcha'.
   String get _partyName =>
       widget.party?.name ??
       (widget.existing != null
-          ? store.partyById(widget.existing!.partyId)?.name ?? ''
+          ? (widget.existing!.partyId == null
+                ? 'Apna Kharcha'
+                : store.partyById(widget.existing!.partyId)?.name ?? '')
           : '');
 
-  /// Direct mode ke dropdown ke liye naam ke hisaab se sorted customers.
-  List<Party> _sortedParties() =>
-      [...store.parties]
-        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-
   Future<void> _save() async {
-    // Entry kis customer par lagegi: edit me entry ki apni party, preset
-    // mode me wohi party, direct mode me form me chuna gaya customer.
-    // Direct mode me customer na chuna ho to save ruk jata hai.
-    final String partyId;
+    // Entry kis par lagegi: edit me entry ki apni party (apna kharcha par
+    // null), preset mode me wohi party, direct (Home) mode me NULL —
+    // apna kharcha, kisi customer par nahi lagta.
+    final String? partyId;
     final ex0 = widget.existing;
     if (ex0 != null) {
       partyId = ex0.partyId;
     } else if (widget.party != null) {
       partyId = widget.party!.id;
-    } else if (_partyId != null) {
-      partyId = _partyId!;
     } else {
-      toast(context, 'Pehle customer chuno');
-      return;
+      partyId = null;
     }
     final amt = double.tryParse(_amount.text.trim()) ?? 0;
     if (amt <= 0) {
@@ -1545,6 +1721,37 @@ class _KharchaFormScreenState extends State<KharchaFormScreen> {
     }
   }
 
+  /// Edit mode me entry yahin se delete bhi ho sakti hai (khaas kar apna
+  /// kharcha, jis ki apni koi detail screen nahi hai).
+  Future<void> _confirmDelete() async {
+    final ex = widget.existing;
+    if (ex == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Entry delete karein?'),
+        content: const Text('Ye kharcha entry delete ho jayegi.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Nahi'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: kRed)),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await store.deleteLedgerEntry(ex.id);
+      if (mounted) {
+        toast(context, 'Entry delete ho gayi');
+        Navigator.pop(context);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1556,36 +1763,21 @@ class _KharchaFormScreenState extends State<KharchaFormScreen> {
                     ? 'Kharcha — $_partyName'
                     : 'Kharcha Karo'),
         ),
+        actions: [
+          if (widget.existing != null)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Delete',
+              onPressed: _confirmDelete,
+            ),
+        ],
       ),
       body: storeBuilder((context) {
         return ListView(
           padding: const EdgeInsets.all(14),
           children: [
-            // Direct mode (Home se, koi party preset nahi aur edit bhi
-            // nahi): customer form ke andar hi dropdown se chuna jata hai.
-            if (widget.existing == null && widget.party == null) ...[
-              if (store.parties.isEmpty)
-                const Text('Pehle Customers mein ja kar customer add karo')
-              else
-                DropdownButtonFormField<String>(
-                  initialValue: _partyId,
-                  decoration: const InputDecoration(labelText: 'Customer'),
-                  items: _sortedParties()
-                      .map(
-                        (p) => DropdownMenuItem<String>(
-                          value: p.id,
-                          child: Text(
-                            p.siteName.isNotEmpty
-                                ? '${p.name} — ${p.siteName}'
-                                : p.name,
-                          ),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (v) => setState(() => _partyId = v),
-                ),
-              const SizedBox(height: 12),
-            ],
+            // v1.8: Home wale direct kharcha me customer ka koi option
+            // NAHI hai — entry apna kharcha ban kar save hoti hai.
             TextField(
               controller: _amount,
               keyboardType: const TextInputType.numberWithOptions(
@@ -1963,7 +2155,8 @@ class KarigarDetailScreen extends StatelessWidget {
                 child: ListTile(
                   dense: true,
                   title: Text(
-                    p?.name ?? 'Purana customer',
+                    // partyId null = apna kharcha se gayi payment.
+                    p?.name ?? 'Apna Kharcha',
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                   subtitle: Text(
@@ -1981,20 +2174,14 @@ class KarigarDetailScreen extends StatelessWidget {
                         rs(e.amount),
                         style: const TextStyle(fontWeight: FontWeight.w800),
                       ),
-                      if (p != null)
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined, size: 19),
-                          tooltip: 'Edit',
-                          onPressed: () {
-                            final pp = store.partyById(e.partyId);
-                            if (pp != null) {
-                              push(
-                                context,
-                                KharchaFormScreen(party: pp, existing: e),
-                              );
-                            }
-                          },
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined, size: 19),
+                        tooltip: 'Edit',
+                        onPressed: () => push(
+                          context,
+                          KharchaFormScreen(party: p, existing: e),
                         ),
+                      ),
                     ],
                   ),
                 ),

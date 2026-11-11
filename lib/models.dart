@@ -12,15 +12,22 @@ String newId() {
 /// Khata entry ki type:
 /// advance     = customer se advance paisa liya (v1.4 ka asal model — paisa
 ///               hamaray paas, customer ka baqi barhta hai)
-/// kharcha     = customer ke advance mein se kharcha hua (baqi kam hota hai);
-///               karigar ko di gayi payment bhi kharcha hi hai (karigarId set)
+/// kharcha     = kharcha hua paisa. partyId ho to us customer ke advance
+///               mein se kata (baqi kam hota hai); partyId NULL ho to
+///               APNA (general) kharcha hai — kisi customer se taluq nahi,
+///               sirf category ke hisaab se darj hota hai aur galle se
+///               minus hota hai (v1.8). Karigar ko di gayi payment bhi
+///               kharcha hi hai (karigarId set).
 /// udhaarDiya  = customer ko udhaar diya (purana model — sirf legacy data)
 /// udhaarLiya  = supplier se udhaar liya (legacy)
 /// paymentMili = customer se payment mili (legacy — baqi par advance jaisa asar)
 /// paymentDi   = supplier ko payment di (legacy)
 class LedgerEntry {
   final String id;
-  final String partyId;
+
+  /// Customer id — advance hamesha kisi customer ki hoti hai. Kharcha par
+  /// NULL ho sakta hai (apna/general kharcha, v1.8).
+  final String? partyId;
   final String type; // advance | kharcha | udhaarDiya | udhaarLiya | paymentMili | paymentDi
   final double amount;
   final String note;
@@ -37,7 +44,7 @@ class LedgerEntry {
 
   LedgerEntry({
     required this.id,
-    required this.partyId,
+    this.partyId,
     required this.type,
     required this.amount,
     required this.note,
@@ -121,7 +128,8 @@ class LedgerEntry {
 
   factory LedgerEntry.fromJson(Map<String, dynamic> j) => LedgerEntry(
         id: j['id'] as String,
-        partyId: j['partyId'] as String,
+        // v1.8: apna kharcha par partyId null save hota hai.
+        partyId: j['partyId'] as String?,
         type: j['type'] as String,
         amount: (j['amount'] as num).toDouble(),
         note: (j['note'] ?? '') as String,

@@ -104,7 +104,9 @@ class AppStore extends ChangeNotifier {
   // Parties + Khata
   // -------------------------------------------------------------------------
 
-  Party? partyById(String id) {
+  /// id null ho (apna kharcha ki entry) to hamesha null — lookup safe hai.
+  Party? partyById(String? id) {
+    if (id == null) return null;
     for (final p in parties) {
       if (p.id == id) return p;
     }
@@ -174,12 +176,53 @@ class AppStore extends ChangeNotifier {
     return t;
   }
 
+  /// Kul kharcha — customer-wise kharcha AUR apna (general) kharcha dono.
   double get totalKharcha {
     double t = 0;
-    for (final p in parties) {
-      t += partyKharchaTotal(p.id);
+    for (final e in ledger) {
+      if (e.type == 'kharcha') t += e.amount;
     }
     return t;
+  }
+
+  // -------------------------------------------------------------------------
+  // v1.8 Apna Kharcha — partyId NULL wali kharcha entries (Home wale
+  // "Kharcha Karo" se banti hain; kisi customer ke baqi par asar nahi,
+  // sirf category ke hisaab se darj + galle se minus).
+  // -------------------------------------------------------------------------
+
+  /// Sirf apna (general) kharcha ka kul.
+  double get generalKharchaTotal {
+    double t = 0;
+    for (final e in ledger) {
+      if (e.type == 'kharcha' && e.partyId == null) t += e.amount;
+    }
+    return t;
+  }
+
+  /// Apna kharcha ki saari entries, nayi pehle.
+  List<LedgerEntry> get generalKharchaEntries {
+    final list = ledger
+        .where((e) => e.type == 'kharcha' && e.partyId == null)
+        .toList();
+    list.sort((a, b) => b.date.compareTo(a.date));
+    return list;
+  }
+
+  /// Apna kharcha category ke hisaab se: 'Material', 'Karigar', ya Custom
+  /// ka apna likha naam (masalan 'Petrol') — har category ka kul.
+  Map<String, double> generalKharchaByCategory() {
+    final map = <String, double>{};
+    for (final e in ledger) {
+      if (e.type != 'kharcha' || e.partyId != null) continue;
+      final cat = e.karigarId != null
+          ? 'Karigar'
+          : (e.kharchaLabel != null && e.kharchaLabel!.isNotEmpty
+                ? e.kharchaLabel!
+                : 'Kharcha');
+      map[cat] = (map[cat] ?? 0) + e.amount;
+    }
+    return map;
   }
 
   Future<void> addParty(Party p) async {

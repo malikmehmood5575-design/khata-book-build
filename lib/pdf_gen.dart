@@ -414,6 +414,23 @@ Future<Uint8List> buildTotalKhataPdf(AppStore store) async {
       ),
     );
   }
+  // v1.8: apna (general) kharcha bhi summary me apni line par — taake
+  // TOTAL wali Kul Kharcha customer rows ke kul se milti rahe.
+  if (store.generalKharchaTotal > 0) {
+    summaryRows.add(
+      pw.TableRow(
+        children: [
+          _cell('Apna Kharcha', bold: true),
+          _cell(rs(0), align: pw.Alignment.centerRight),
+          _cell(
+            rs(store.generalKharchaTotal),
+            align: pw.Alignment.centerRight,
+          ),
+          _cell(rs(0), align: pw.Alignment.centerRight, bold: true),
+        ],
+      ),
+    );
+  }
   // Grand totals — Home hero ke wohi numbers (store ke total getters).
   summaryRows.add(
     pw.TableRow(
@@ -456,12 +473,18 @@ Future<Uint8List> buildTotalKhataPdf(AppStore store) async {
   ];
   double run = 0;
   for (final e in wise) {
-    run += e.baqiEffect;
+    // Apna kharcha (partyId null) kisi customer ke baqi ko nahi badalta —
+    // running baqi sirf customer entries par chalta hai, aur us row ki
+    // Baqi cell me '—' ata hai.
+    final isApna = e.partyId == null;
+    if (!isApna) run += e.baqiEffect;
     wiseRows.add(
       pw.TableRow(
         children: [
           _cell(fmtDate(e.date)),
-          _cell(store.partyById(e.partyId)?.name ?? ''),
+          _cell(
+            isApna ? 'Apna Kharcha' : store.partyById(e.partyId)?.name ?? '',
+          ),
           _detailCell(store, e),
           _cell(
             _signedAmt(e),
@@ -469,7 +492,7 @@ Future<Uint8List> buildTotalKhataPdf(AppStore store) async {
             color: _amtColor(e),
             bold: true,
           ),
-          _cell(rs(run), align: pw.Alignment.centerRight),
+          _cell(isApna ? '—' : rs(run), align: pw.Alignment.centerRight),
         ],
       ),
     );
